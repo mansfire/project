@@ -341,9 +341,10 @@ save(filename)
          WL_TZ(:,ii)=WLz(Tz(jj,:,Dz));
 
      end
-     ZC(ii,:,:)=ZC_TZ;
-     MAV(ii,:,:)=MAV_TZ;
-     ZC(ii,:,:)=SSC_TZ;
+     ZC(jj,:,:)=ZC_TZ;
+     MAV(jj,:,:)=MAV_TZ;
+     SSc(jj,:,:)=SSC_TZ;
+     WL(jj,:,:)=WL_TZ;
  end
  
  
