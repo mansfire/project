@@ -315,7 +315,7 @@ TrimmedTF=[];
 save(filename)
  %% off data prep
  binsize=0.05*fs;
- T=zeros(8,length(mymodel.data{9}{1}));
+ T=zeros(8,240100);
  for kk=1:22
      for ii=1:8
          for jj=1:240100
@@ -341,10 +341,10 @@ save(filename)
          WL_TZ(:,ii)=WLz(Tz(jj,:,Dz));
 
      end
-     ZC(jj,:,:)=ZC_TZ;
-     MAV(jj,:,:)=MAV_TZ;
-     SSc(jj,:,:)=SSC_TZ;
-     WL(jj,:,:)=WL_TZ;
+     ZC{jj}=ZC_TZ(1:1596);
+     MAV{jj}=MAV_TZ(1:1596);
+     SSc{jj}=SSC_TZ(1:1596);
+     WL{jj}=WL_TZ(1:1596);
  end
  
  
