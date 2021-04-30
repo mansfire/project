@@ -113,12 +113,11 @@ n2=120;
 n3=180;
 for kk=1:22
     data=mymodel.data{kk};
-for ll=1:8
+
 bp1  = designfilt('bandpassiir','FilterOrder',20, ...
          'HalfPowerFrequency1',hp,'HalfPowerFrequency2',lp, ...
          'SampleRate',fs);
 %% band pass
-[P,F] = pwelch(data{ll},ones(4097,1),round(4097/2),4097,fs,'power');
 
 % Filter the data and compensate for delay
 D1 = round(mean(grpdelay(bp1))); % filter delay
@@ -172,8 +171,8 @@ for jj=1:8
     bpnotch3 = filter(notch3,[filtdata3(:,jj); zeros(D4,1)]);
     filtdata4(:,jj) = bpnotch3(D4+1:end);
 end
-fulldata{:,ll}=filtdata4;
-end
+fulldata=filtdata4;
+
 ylp.data{kk}=fulldata;
 end
 filename='filtered.mat';
@@ -212,7 +211,7 @@ total_data=zeros(22,240100);
 for ii=1:22
     for jj=1:8
         for kk=1:240100
-            total_data(ii,kk)=total_data(ii,kk)+abs(mymodel.data{ii}{jj}(kk));
+            total_data(ii,kk)=total_data(ii,kk)+abs(ylp.data{ii}(kk,jj));
         end
     end
 end
@@ -229,12 +228,15 @@ Start=[];
 Start1=[];
 Stop=[];
 Stop1=[];
+data1=smoothdata(abs(ylp.data{1}(:,4)),'gaussian',300);
+mean1=mean(data1);
+std1=std(data1);
 for jj=300:240100
-   if (Smoothed_data(1,jj)>1.03*mean_data(1)+std_data(1))&&(S==0)
+   if (data1(jj)>1.03*mean1+std1) &&(S==0)
          S=1;
          j=j+1;
          Start1=[Start1 jj];
-     elseif (Smoothed_data(1,jj)<0.97*mean_data(1)- std_data(1))&&(S==1)
+     elseif (data1(jj)<mean1-0.5*std1) &&(S==1)
          S=0;
          Stop1=[Stop1 jj];
             
@@ -243,50 +245,63 @@ for jj=300:240100
 end
 Start{1}=Start1;
 Stop{1}=Stop1;
-Start2=[];
-Stop2=[];
 S=0;
 j=0;
-for jj=300:240100
-   if (Smoothed_data(2,jj)>1.03*mean_data(2)+1.9*std_data(2))&&(S==0)
-         S=1;
-         j=j+1;
-         Start2=[Start2 jj];
-     elseif (Smoothed_data(2,jj)<0.96*mean_data(2)- std_data(2))&&(S==1)
-         S=0;
-         Stop2=[Stop2 jj];
-            
-    end
-end
-Start{2}=Start2;
-Stop{2}=Stop2;
+
 Start3=[];
+
 Stop3=[];
-S=0;
-j=0;
+data3=smoothdata(abs(ylp.data{3}(:,4)),'gaussian',300);
+mean3=mean(data3);
+std3=std(data3);
 for jj=300:240100
-   if (Smoothed_data(3,jj)>1.07*mean_data(3)+std_data(2))&&(S==0)
+   if (data3(jj)>1.04*mean3+std3) &&(S==0)
          S=1;
          j=j+1;
          Start3=[Start3 jj];
-     elseif (Smoothed_data(3,jj)<mean_data(3)- 2*std_data(3))&&(S==1)
+     elseif (data3(jj)<mean3-0.5*std3) &&(S==1)
          S=0;
          Stop3=[Stop3 jj];
             
-    end
+   end
+
 end
 Start{3}=Start3;
 Stop{3}=Stop3;
+S=0;
+j=0;
+
+Start5=[];
+
+Stop5=[];
+data5=smoothdata(abs(ylp.data{5}(:,5)),'gaussian',300);
+mean5=mean(data5);
+std5=std(data5);
+for jj=300:240100
+   if (data5(jj)>mean5+std5) &&(S==0)
+         S=1;
+         j=j+1;
+         Start5=[Start5 jj];
+     elseif (data5(jj)<mean5-0.25*std5) &&(S==1)
+         S=0;
+         Stop5=[Stop5 jj];
+            
+   end
+
+end
+
+Start{5}=Start5;
+Stop{5}=Stop5;
 filename='smoothed.mat';
 save(filename)
 %% new data set
 
 New=zeros(22,819);
 for ii=1:22
-    
-    for jj=1:length(Start2)
-        k=1;
-        for kk=Start2(jj):Stop2(jj)
+    k=1;
+    for jj=1:length(Start1)
+        
+        for kk=Start1(jj):Stop1(jj)
             New(ii,k)=Smoothed_data(ii,kk);
             k=k+1;
         end
@@ -297,8 +312,8 @@ end
         
 %% index on data
 p=[];
-for ii=1:length(Start2)
-    p=[p Start2(ii):Stop2(ii)];
+for ii=1:length(Start1)
+    p=[p Start1(ii):Stop1(ii)];
 end
 %% create trimmed data set
 TrimmedTF=[];
@@ -308,7 +323,7 @@ TrimmedTF=[];
              Trim(jj,kk)=mymodel.data{ii}{jj}(p(kk));
          end
      end
-     TrimmedTF(ii,:,:)=Trim;
+     TrimmedTF{ii}=Trim;
  end
  
  filename='trimmed.mat';
@@ -325,6 +340,7 @@ save(filename)
      Tz(kk,:,:)=T;
  end
  for jj=1:22
+     for kk=1:8
      nBin=floor(length(Tz(jj,:,:))/binsize);
      Bz=floor(linspace(1,length(Tz(jj,:,:)),nBin));
      Ez=[];
@@ -335,16 +351,22 @@ save(filename)
      for ii=1:nBin-1
          Dz=Bz(ii+1);
         
-         ZC_TZ(:,ii)=ZCz(Tz(jj,:,Dz));
-         MAV_TZ(:,ii)=MAVz(Tz(jj,:,Dz));
-         SSC_TZ(:,ii)=SSCz(Tz(jj,:,Dz));
-         WL_TZ(:,ii)=WLz(Tz(jj,:,Dz));
+         ZC_TZ(kk,ii)=ZCz(Tz(jj,kk,Bz(ii):Dz));
+         MAV_TZ(kk,ii)=MAVz(Tz(jj,kk,Bz(ii):Dz));
+         SSC_TZ(kk,ii)=SSCz(Tz(jj,kk,Bz(ii):Dz));
+         WL_TZ(kk,ii)=WLz(Tz(jj,kk,Bz(ii):Dz));
 
      end
-     ZC{jj}=ZC_TZ(1:1596);
-     MAV{jj}=MAV_TZ(1:1596);
-     SSc{jj}=SSC_TZ(1:1596);
-     WL{jj}=WL_TZ(1:1596);
+     ZC{jj}=ZC_TZ(:,1:1596);
+     MAV{jj}=MAV_TZ(:,1:1596);
+     SSc{jj}=SSC_TZ(:,1:1596);
+     WL{jj}=WL_TZ(:,1:1596);
+     end
  end
  
- 
+%% covariance
+for ii=1:2:22
+    clear a
+    a=[WL{ii};SSc{ii};MAV{ii};ZC{ii}];
+    cov_mat{ii}=cov(a*a');                                                           
+end
