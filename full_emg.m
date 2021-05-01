@@ -113,7 +113,11 @@ n2=120;
 n3=180;
 for kk=1:22
     data=mymodel.data{kk};
-
+clear filtdata1;
+clear filtdata2;
+clear filtdata3;
+clear filtdata4;
+clear fulldata;
 bp1  = designfilt('bandpassiir','FilterOrder',20, ...
          'HalfPowerFrequency1',hp,'HalfPowerFrequency2',lp, ...
          'SampleRate',fs);
@@ -123,7 +127,7 @@ bp1  = designfilt('bandpassiir','FilterOrder',20, ...
 D1 = round(mean(grpdelay(bp1))); % filter delay
 a=0;
 for jj=1:8
-    bpfilt = filter(bp1,[Data{jj}; zeros(D1,1)]);
+    bpfilt = filter(bp1,[data{jj}; zeros(D1,1)]);
     filtdata1(:,jj) = bpfilt(D1+1:end);
     
 end
@@ -228,34 +232,64 @@ Start=[];
 Start1=[];
 Stop=[];
 Stop1=[];
-data1=smoothdata(abs(ylp.data{1}(:,4)),'gaussian',300);
+data1=smoothdata(abs(ylp.data{1}(:,2)),'gaussian',300);
 mean1=mean(data1);
 std1=std(data1);
-for jj=300:240100
-   if (data1(jj)>1.03*mean1+std1) &&(S==0)
+for jj=300:length(data3)
+   if (data1(jj)>mean1+1.2*std1) &&(S==0)
          S=1;
          j=j+1;
          Start1=[Start1 jj];
-     elseif (data1(jj)<mean1-0.5*std1) &&(S==1)
+     elseif (data1(jj)<mean1-std1) &&(S==1)
          S=0;
          Stop1=[Stop1 jj];
             
    end
 
 end
+if length(Stop1)<length(Start1)
+    Stop1=[Stop1 240100];
+end
 Start{1}=Start1;
 Stop{1}=Stop1;
+S=0;
+j=0;
+
+Start2=[];
+
+Stop2=[];
+data2=smoothdata(abs(ylp.data{2}(:,4)),'gaussian',300);
+mean2=mean(data2);
+std2=std(data2);
+for jj=300:length(data2)
+   if (data2(jj)>mean2+0.4*std2) &&(S==0)
+         S=1;
+         j=j+1;
+         Start2=[Start2 jj];
+     elseif (data2(jj)<mean2-0.65*std2) &&(S==1)
+         S=0;
+         Stop2=[Stop2 jj];
+            
+   end
+
+end
+if length(Stop2)<length(Start2)
+    Stop2=[Stop2 240100];
+end
+Start{2}=Start2;
+Stop{2}=Stop2;
+
 S=0;
 j=0;
 
 Start3=[];
 
 Stop3=[];
-data3=smoothdata(abs(ylp.data{3}(:,4)),'gaussian',300);
+data3=smoothdata(abs(ylp.data{3}(:,5)),'gaussian',300);
 mean3=mean(data3);
 std3=std(data3);
-for jj=300:240100
-   if (data3(jj)>1.04*mean3+std3) &&(S==0)
+for jj=300:length(data3)
+   if (data3(jj)>mean3+std3) &&(S==0)
          S=1;
          j=j+1;
          Start3=[Start3 jj];
@@ -266,32 +300,54 @@ for jj=300:240100
    end
 
 end
+if length(Stop3)<length(Start3)
+    Stop3=[Stop3 jj];
+end
 Start{3}=Start3;
 Stop{3}=Stop3;
+
 S=0;
 j=0;
 
-Start5=[];
+Start4=[];
 
-Stop5=[];
-data5=smoothdata(abs(ylp.data{5}(:,5)),'gaussian',300);
-mean5=mean(data5);
-std5=std(data5);
-for jj=300:240100
-   if (data5(jj)>mean5+std5) &&(S==0)
+Stop4=[];
+data4=smoothdata(abs(ylp.data{4}(:,5)),'gaussian',300);
+mean4=mean(data4);
+std4=std(data4);
+for jj=300:length(data4)
+   if (data4(jj)>mean4+std4) &&(S==0)
          S=1;
          j=j+1;
-         Start5=[Start5 jj];
-     elseif (data5(jj)<mean5-0.25*std5) &&(S==1)
+         Start4=[Start4 jj];
+     elseif (data4(jj)<mean4-0.5*std4) &&(S==1)
          S=0;
-         Stop5=[Stop5 jj];
+         Stop4=[Stop4 jj];
             
    end
 
 end
+Start{4}=Start4;
+Stop{4}=Stop4;
+
+S=0;
+j=0;
+
+Start5=[300];
+
+Stop5=[249399];
+
 
 Start{5}=Start5;
 Stop{5}=Stop5;
+
+
+
+Start6=[300];
+
+Stop6=[249399];
+Start{6}=Start6;
+Stop{6}=Stop6;
 filename='smoothed.mat';
 save(filename)
 %% new data set
@@ -363,10 +419,11 @@ save(filename)
      WL{jj}=WL_TZ(:,1:1596);
      end
  end
- 
+ cord=0;
 %% covariance
 for ii=1:2:22
     clear a
     a=[WL{ii};SSc{ii};MAV{ii};ZC{ii}];
-    cov_mat{ii}=cov(a*a');                                                           
+    cord=cord+1;
+    cov_mat{cord}=cov(a*a');                                                           
 end
