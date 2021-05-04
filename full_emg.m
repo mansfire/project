@@ -407,15 +407,15 @@ filename='smoothed.mat';
 save(filename)
 %% new data set
 
-New=zeros(22,819);
+
 for ii=1:22
     k=1;
-    start=Starrt{ii};
+    start=Start{ii};
     stop=Stop{ii};
     for jj=1:length(start)
         
         for kk=start(jj):stop(jj)
-            New(ii,k)=Smoothed_data(ii,kk);
+            New{ii}(k)=Smoothed_data{ii}(kk);
             k=k+1;
         end
     end
