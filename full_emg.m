@@ -434,8 +434,8 @@ save(filename)
  for kk=1:22
      clear T;
      for ii=1:8
-         for jj=1:length(ylp.data{kk}(:,ii))
-             T(ii,jj)=(ylp.data{kk}(jj,ii));
+         for jj=1:length(TrimmedTF{kk}(:,ii))
+             T(ii,jj)=(TrimmedTF{kk}(jj,ii));
          end
      end
      Tz{kk}=T;
