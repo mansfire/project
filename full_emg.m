@@ -461,14 +461,13 @@ save(filename)
  for kk=1:22
      clear T;
      for ii=1:8
-         for jj=1:length(ylp.data{kk}(jj,:))
+         for jj=1:length(ylp.data{kk}(:,ii))
              T(ii,jj)=(ylp.data{kk}(jj,ii));
          end
      end
      Tz{kk}=T;
  end
  for jj=1:22
-     for kk=1:8
      nBin=floor(length(Tz{jj})/binsize);
      Bz=floor(linspace(1,length(Tz{jj}),nBin));
      Ez=[];
@@ -476,6 +475,8 @@ save(filename)
      SSC_TZ=Ez;
      MAV_TZ=Ez;
      WL_TZ=Ez;
+     for kk=1:8
+
      for ii=1:nBin-1
          Dz=Bz(ii+1);
         
@@ -485,12 +486,13 @@ save(filename)
          WL_TZ(kk,ii)=WLz(Tz{jj}(kk,Bz(ii):Dz));
 
      end
-
-     end
      ZC{jj}=ZC_TZ;
      MAV{jj}=MAV_TZ;
      SSc{jj}=SSC_TZ;
      WL{jj}=WL_TZ;
+
+     end
+
  end
  cord=0;
 %% covariance
