@@ -1,6 +1,6 @@
 clc;
 clear all;
-    close all;
+close all;
 %% hand close%%
 %% Training data%%
 load('Hand Close Training.mat')
