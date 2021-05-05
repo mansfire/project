@@ -427,7 +427,7 @@ end
 p=[];
 for jj=1:22
     clear p;
-    start=Starrt{ii};
+    start=Start{ii};
     stop=Stop{ii};
     for ii=1:length(Start1)
         p=[p Start1(ii):Stop1(ii)];
@@ -452,16 +452,16 @@ save(filename)
  T=zeros(8,240100);
  for kk=1:22
      for ii=1:8
-         for jj=1:240100
-             T(ii,jj)=(mymodel.data{kk}{ii}(jj));
+         for jj=1:length(ylp.data{kk}{ii})
+             T(ii,jj)=(ylp.data{kk}{ii}(jj));
          end
      end
-     Tz(kk,:,:)=T;
+     Tz{kk}=T;
  end
  for jj=1:22
      for kk=1:8
-     nBin=floor(length(Tz(jj,:,:))/binsize);
-     Bz=floor(linspace(1,length(Tz(jj,:,:)),nBin));
+     nBin=floor(length(Tz{jj})/binsize);
+     Bz=floor(linspace(1,length(Tz{jj}),nBin));
      Ez=[];
      ZC_TZ=Ez;
      SSC_TZ=Ez;
@@ -470,10 +470,10 @@ save(filename)
      for ii=1:nBin-1
          Dz=Bz(ii+1);
         
-         ZC_TZ(kk,ii)=ZCz(Tz(jj,kk,Bz(ii):Dz));
-         MAV_TZ(kk,ii)=MAVz(Tz(jj,kk,Bz(ii):Dz));
-         SSC_TZ(kk,ii)=SSCz(Tz(jj,kk,Bz(ii):Dz));
-         WL_TZ(kk,ii)=WLz(Tz(jj,kk,Bz(ii):Dz));
+         ZC_TZ(kk,ii)=ZCz(Tz{jj}(kk,Bz(ii):Dz));
+         MAV_TZ(kk,ii)=MAVz(Tz{jj}(kk,Bz(ii):Dz));
+         SSC_TZ(kk,ii)=SSCz(Tz{jj}(kk,Bz(ii):Dz));
+         WL_TZ(kk,ii)=WLz(Tz{jj}(kk,Bz(ii):Dz));
 
      end
      ZC{jj}=ZC_TZ(:,1:1596);
@@ -484,14 +484,23 @@ save(filename)
  end
  cord=0;
 %% covariance
-for ii=1:2:22
+for ii=1:22
     clear a
     clear V
     clear D
     a=[WL{ii};SSc{ii};MAV{ii};ZC{ii}];
     cord=cord+1;
-    cov_mat{cord}=cov(a*a');   
-    [V,D] = eig(a);
+    cov_mat{cord}=cov(a');   
+    [V,D] = eig(cov_mat{ii});
     eig_vec{ii}=V;
     eig_val{ii}=D;
+end
+for ii=1:22
+    mean_class=mean(V*a);
+    dif=0;
+    for jj=1:32
+        for kk=1:length(a(ii))
+            dif=dif+(abs(mean_class(kk)-a(jj,kk)))^2;
+        end
+    end
 end
