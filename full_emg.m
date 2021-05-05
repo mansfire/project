@@ -106,7 +106,7 @@ mymodel.name{22}='wrist_ulnar_dev_val.mat';
 mymodel.data{22}=Data;
 for ii=1:22
     for jj=1:length(mymodel.data{ii}{6})
-        mymodel.data{ii}{6}(jj)=0;
+        mymodel.data{ii}{6}(jj)=0;%% we were told to just remove this channel
     end
 end
 %% filters
@@ -184,37 +184,9 @@ ylp.data{kk}=fulldata;
 end
 filename='filtered.mat';
 save(filename)
-% for ii=1:12
-%     data=ylp.data{ii};
-%     for jj=1:8
-%         mydata=(abs(data{jj})./4) ;
-%         bindata{:,jj}=mydata;
-%     end
-%     ylp2.data{jj}=bindata;
-% end
-% for jj=1:12
-% binned=ylp.data{jj};
-% data_bin=binned{1};
-% figure(jj)
-% for ii = 1: 4
-% subplot(4,2,ii);
-% plot(data_bin(:,ii))
-%     if ii == 1
-%         ylabel('Voltage [mV]')
-%     end
-%     ylim([0, 200])
-%     title(['Bin EMG ', num2str(ii), 'for ', mymodel.name{jj}])
-% end
-% hold on
-% for ii = 1: 4
-%     subplot(4,2,ii+4);
-%     plot(data_bin(:,ii+4))
-%     ylim([0, 200])
-%     title(['Bin EMG ', num2str(ii+4),'for ' mymodel.name{jj}])
-% end
-% hold off
-% end
+
 total_data=[];
+%% add all the channels for each of the 11 test and validation postures
 for ii=1:22
     total=zeros(1,length(ylp.data{ii}(:,1)));
     for jj=1:8
@@ -229,12 +201,13 @@ for ii=1:22
     total_data{ii}=total;
 end
 
-
+%% smooth out the data to make it easuer to analyze
 for ii=1:22
     Smoothed_data{ii}=smoothdata(total_data{ii},'gaussian',150);
     std_data(ii)=std(Smoothed_data{ii});
     mean_data(ii)=mean(Smoothed_data{ii});
 end
+%% for each posture, try to capture apptox. 50% (0.5) of the data, us whichever channel is "prettiest"
 S=0;
 j=0;
 Start=[];
@@ -420,9 +393,9 @@ for ii=1:22
     k=1;
     start=Start{ii};
     stop=Stop{ii};
-    for jj=1:length(start)
+    for jj=1:length(start)%look at each start point
         
-        for kk=start(jj):stop(jj)
+        for kk=start(jj):stop(jj)%look at the data between start 1 and stop 1, etc.
             New{ii}(k)=Smoothed_data{ii}(kk);
             k=k+1;
         end
@@ -442,7 +415,7 @@ for jj=1:22
     end
     P{ii}=p;
 end
-%% create trimmed data set
+%% create trimmed data set% this looks at 22 postures (11 X2) and 8 channels and only takes th on aspects of each
 TrimmedTF=[];
  for ii=1:22
      for jj=1:8
@@ -467,6 +440,7 @@ save(filename)
      end
      Tz{kk}=T;
  end
+ % extract each of our 4 choosen features, please see respective files
  for jj=1:22
      nBin=floor(length(Tz{jj})/binsize);
      Bz=floor(linspace(1,length(Tz{jj}),nBin));
@@ -509,4 +483,3 @@ for ii=1:22
     eig_val{ii}=D;
 end
 
-f
