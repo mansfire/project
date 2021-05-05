@@ -104,7 +104,11 @@ mymodel.data{21}=Data;
 load('Wrist Ulnar Dev Validation.mat')
 mymodel.name{22}='wrist_ulnar_dev_val.mat';
 mymodel.data{22}=Data;
-
+for ii=1:22
+    for jj=1:length(mymodel.data{ii}(6)
+        mymodel.data{ii}(6)=0;
+    end
+end
 %% filters
 lp=480;
 hp=30;
@@ -215,8 +219,12 @@ for ii=1:22
     total=zeros(1,length(ylp.data{ii}(:,1)));
     for jj=1:8
         for kk=1:length(ylp.data{ii}(:,jj))
-            total(:,kk)=total(:,kk)+abs(ylp.data{ii}(kk,jj));
-        end
+                if jj==6
+                    total(:,kk)=total(:,kk);
+                else
+                    total(:,kk)=total(:,kk)+abs(ylp.data{ii}(kk,jj));
+                end
+            end
     end
     total_data{ii}=total;
 end
@@ -449,11 +457,12 @@ TrimmedTF=[];
 save(filename)
  %% off data prep
  binsize=0.05*fs;
- T=zeros(8,240100);
+
  for kk=1:22
+     clear T;
      for ii=1:8
-         for jj=1:length(ylp.data{kk}{ii})
-             T(ii,jj)=(ylp.data{kk}{ii}(jj));
+         for jj=1:length(ylp.data{kk}(jj,:))
+             T(ii,jj)=(ylp.data{kk}(jj,ii));
          end
      end
      Tz{kk}=T;
@@ -476,11 +485,12 @@ save(filename)
          WL_TZ(kk,ii)=WLz(Tz{jj}(kk,Bz(ii):Dz));
 
      end
-     ZC{jj}=ZC_TZ(:,1:1596);
-     MAV{jj}=MAV_TZ(:,1:1596);
-     SSc{jj}=SSC_TZ(:,1:1596);
-     WL{jj}=WL_TZ(:,1:1596);
+
      end
+     ZC{jj}=ZC_TZ;
+     MAV{jj}=MAV_TZ;
+     SSc{jj}=SSC_TZ;
+     WL{jj}=WL_TZ;
  end
  cord=0;
 %% covariance
@@ -491,25 +501,9 @@ for ii=1:22
     a=[WL{ii};SSc{ii};MAV{ii};ZC{ii}];
     cord=cord+1;
     cov_mat{cord}=cov(a');   
+    a_mat{ii}=a;
     [V,D] = eig(cov_mat{ii});
     eig_vec{ii}=V;
     eig_val{ii}=D;
 end
-for ii=1:22
-    mean_class=mean(V*a);
-    dif=0;
-    min_dif=1000000000000000000;
-    for jj=1:32
-        for kk=1:32
-            for ll=1:length(a(ii))
-                dif=dif+(abs(mean_class(kk)-a(jj,ll)))^2;
-            end
-            dif=sqrt(dif);
-            if dif<min_dif
-                min_dif=dif;
-                keep_index(jj)=kk;
-            end
-            euclidean_mat{jj}=keep_index;
-        end
-    end
-end
+
