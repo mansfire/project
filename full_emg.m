@@ -498,9 +498,18 @@ end
 for ii=1:22
     mean_class=mean(V*a);
     dif=0;
+    min_dif=1000000000000000000;
     for jj=1:32
-        for kk=1:length(a(ii))
-            dif=dif+(abs(mean_class(kk)-a(jj,kk)))^2;
+        for kk=1:32
+            for ll=1:length(a(ii))
+                dif=dif+(abs(mean_class(kk)-a(jj,ll)))^2;
+            end
+            dif=sqrt(dif);
+            if dif<min_dif
+                min_dif=dif;
+                keep_index(jj)=kk;
+            end
+            euclidean_mat{jj}=keep_index;
         end
     end
 end
