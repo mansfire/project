@@ -482,4 +482,4 @@ for ii=1:22
     eig_vec{ii}=V;
     eig_val{ii}=D;
 end
-
+%% can someone start the Euclidean? This one is stumping me
