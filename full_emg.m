@@ -1,6 +1,6 @@
 clc;
 clear all;
-close all;
+    close all;
 %% hand close%%
 %% Training data%%
 load('Hand Close Training.mat')
@@ -105,8 +105,10 @@ load('Wrist Ulnar Dev Validation.mat')
 mymodel.name{22}='wrist_ulnar_dev_val.mat';
 mymodel.data{22}=Data;
 for ii=1:22
-    for jj=1:length(mymodel.data{ii}(6)
-        mymodel.data{ii}(6)=0;
+
+    for jj=1:length(mymodel.data{ii}{6})
+        mymodel.data{ii}{6}(jj)=0;%% we were told to just remove this channel
+
     end
 end
 %% filters
@@ -184,37 +186,10 @@ ylp.data{kk}=fulldata;
 end
 filename='filtered.mat';
 save(filename)
-% for ii=1:12
-%     data=ylp.data{ii};
-%     for jj=1:8
-%         mydata=(abs(data{jj})./4) ;
-%         bindata{:,jj}=mydata;
-%     end
-%     ylp2.data{jj}=bindata;
-% end
-% for jj=1:12
-% binned=ylp.data{jj};
-% data_bin=binned{1};
-% figure(jj)
-% for ii = 1: 4
-% subplot(4,2,ii);
-% plot(data_bin(:,ii))
-%     if ii == 1
-%         ylabel('Voltage [mV]')
-%     end
-%     ylim([0, 200])
-%     title(['Bin EMG ', num2str(ii), 'for ', mymodel.name{jj}])
-% end
-% hold on
-% for ii = 1: 4
-%     subplot(4,2,ii+4);
-%     plot(data_bin(:,ii+4))
-%     ylim([0, 200])
-%     title(['Bin EMG ', num2str(ii+4),'for ' mymodel.name{jj}])
-% end
-% hold off
-% end
+
 total_data=[];
+%% add all the channels for each of the 11 test and validation postures
+
 for ii=1:22
     total=zeros(1,length(ylp.data{ii}(:,1)));
     for jj=1:8
@@ -229,12 +204,13 @@ for ii=1:22
     total_data{ii}=total;
 end
 
-
+%% smooth out the data to make it easuer to analyze
 for ii=1:22
     Smoothed_data{ii}=smoothdata(total_data{ii},'gaussian',150);
     std_data(ii)=std(Smoothed_data{ii});
     mean_data(ii)=mean(Smoothed_data{ii});
 end
+%% for each posture, try to capture apptox. 50% (0.5) of the data, us whichever channel is "prettiest"
 S=0;
 j=0;
 Start=[];
@@ -411,6 +387,60 @@ if length(Stop8)<length(Start8)
 end
 Start{8}=Start8;
 Stop{8}=Stop8;
+
+S=0;
+j=0;
+
+Start9=[];
+
+Stop9=[];
+data9=smoothdata(abs(ylp.data{9}(:,4)),'gaussian',5000);
+mean9=mean(data9);
+std9=std(data9);
+for jj=300:length(data9)
+   if (data9(jj)>mean9) &&(S==0)
+         S=1;
+         j=j+1;
+         Start9=[Start9 jj];
+     elseif (data9(jj)<mean9-0.33*std9) &&(S==1)
+         S=0;
+         Stop9=[Stop9 jj];
+            
+   end
+
+end
+if length(Stop9)<length(Start9)
+  Stop9=[Stop9 jj];
+end
+Start{9}=Start9;
+Stop{9}=Stop9;
+S=0;
+j=0;
+
+Start10=[];
+
+Stop10=[];
+data10=smoothdata(abs(ylp.data{10}(:,4)),'gaussian',5000);
+mean10=mean(data10);
+std10=std(data10);
+for jj=300:length(data10)
+   if (data10(jj)>mean10) &&(S==0)
+         S=1;
+         j=j+1;
+         Start10=[Start10 jj];
+     elseif (data10(jj)<mean10-0.43*std10) &&(S==1)
+         S=0;
+         Stop10=[Stop10 jj];
+            
+   end
+
+end
+if length(Stop10)<length(Start10)
+  Stop10=[Stop10 jj];
+end
+Start{10}=Start10;
+Stop{10}=Stop10;
+
 filename='smoothed.mat';
 save(filename)
 %% new data set
@@ -420,9 +450,11 @@ for ii=1:22
     k=1;
     start=Start{ii};
     stop=Stop{ii};
-    for jj=1:length(start)
+
+    for jj=1:length(start)%look at each start point
         
-        for kk=start(jj):stop(jj)
+        for kk=start(jj):stop(jj)%look at the data between start 1 and stop 1, etc.
+
             New{ii}(k)=Smoothed_data{ii}(kk);
             k=k+1;
         end
@@ -442,7 +474,7 @@ for jj=1:22
     end
     P{ii}=p;
 end
-%% create trimmed data set
+%% create trimmed data set% this looks at 22 postures (11 X2) and 8 channels and only takes th on aspects of each
 TrimmedTF=[];
  for ii=1:22
      for jj=1:8
@@ -461,12 +493,15 @@ save(filename)
  for kk=1:22
      clear T;
      for ii=1:8
-         for jj=1:length(ylp.data{kk}(:,ii))
-             T(ii,jj)=(ylp.data{kk}(jj,ii));
+
+         for jj=1:length(TrimmedTF{kk}(:,ii))
+             T(ii,jj)=(TrimmedTF{kk}(jj,ii));
+
          end
      end
      Tz{kk}=T;
  end
+ % extract each of our 4 choosen features, please see respective files
  for jj=1:22
      nBin=floor(length(Tz{jj})/binsize);
      Bz=floor(linspace(1,length(Tz{jj}),nBin));
@@ -508,4 +543,6 @@ for ii=1:22
     eig_vec{ii}=V;
     eig_val{ii}=D;
 end
+
+%% can someone start the Euclidean? This one is stumping me
 
