@@ -543,6 +543,23 @@ for ii=1:22
     eig_vec{ii}=V;
     eig_val{ii}=D;
 end
+    eig_val2=eig_val;%just so we don't mess up anything
+    for ii=1:22
+        kk=0;
+        eig_cut=10^-6;
+        for jj=1:32
+            if eig_val2{ii}(jj,jj)>eig_cut
+                eig_highest=eig_val2{ii}(jj,jj);
+                remove=jj;
+                kk=kk+1;
+                 eig_val2{ii}(remove,remove)=0;
+                 eig_new{ii}(kk,:)=eig_val{ii}(remove,remove);
+            end
+
+        end
+          
+
+    end
 
 %% can someone start the Euclidean? This one is stumping me
 
