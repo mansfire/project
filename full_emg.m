@@ -384,6 +384,58 @@ if length(Stop8)<length(Start8)
 end
 Start{8}=Start8;
 Stop{8}=Stop8;
+S=0;
+j=0;
+
+Start9=[];
+
+Stop9=[];
+data9=smoothdata(abs(ylp.data{9}(:,4)),'gaussian',5000);
+mean9=mean(data9);
+std9=std(data9);
+for jj=300:length(data9)
+   if (data9(jj)>mean9) &&(S==0)
+         S=1;
+         j=j+1;
+         Start9=[Start9 jj];
+     elseif (data9(jj)<mean9-0.33*std9) &&(S==1)
+         S=0;
+         Stop9=[Stop9 jj];
+            
+   end
+
+end
+if length(Stop9)<length(Start9)
+  Stop9=[Stop9 jj];
+end
+Start{9}=Start9;
+Stop{9}=Stop9;
+S=0;
+j=0;
+
+Start10=[];
+
+Stop10=[];
+data10=smoothdata(abs(ylp.data{10}(:,4)),'gaussian',5000);
+mean10=mean(data10);
+std10=std(data10);
+for jj=300:length(data10)
+   if (data10(jj)>mean10) &&(S==0)
+         S=1;
+         j=j+1;
+         Start10=[Start10 jj];
+     elseif (data10(jj)<mean10-0.43*std10) &&(S==1)
+         S=0;
+         Stop10=[Stop10 jj];
+            
+   end
+
+end
+if length(Stop10)<length(Start10)
+  Stop10=[Stop10 jj];
+end
+Start{10}=Start10;
+Stop{10}=Stop10;
 filename='smoothed.mat';
 save(filename)
 %% new data set
