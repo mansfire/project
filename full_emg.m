@@ -105,8 +105,10 @@ load('Wrist Ulnar Dev Validation.mat')
 mymodel.name{22}='wrist_ulnar_dev_val.mat';
 mymodel.data{22}=Data;
 for ii=1:22
+
     for jj=1:length(mymodel.data{ii}{6})
         mymodel.data{ii}{6}(jj)=0;%% we were told to just remove this channel
+
     end
 end
 %% filters
@@ -187,6 +189,7 @@ save(filename)
 
 total_data=[];
 %% add all the channels for each of the 11 test and validation postures
+
 for ii=1:22
     total=zeros(1,length(ylp.data{ii}(:,1)));
     for jj=1:8
@@ -384,6 +387,7 @@ if length(Stop8)<length(Start8)
 end
 Start{8}=Start8;
 Stop{8}=Stop8;
+
 S=0;
 j=0;
 
@@ -436,6 +440,7 @@ if length(Stop10)<length(Start10)
 end
 Start{10}=Start10;
 Stop{10}=Stop10;
+
 filename='smoothed.mat';
 save(filename)
 %% new data set
@@ -445,9 +450,11 @@ for ii=1:22
     k=1;
     start=Start{ii};
     stop=Stop{ii};
+
     for jj=1:length(start)%look at each start point
         
         for kk=start(jj):stop(jj)%look at the data between start 1 and stop 1, etc.
+
             New{ii}(k)=Smoothed_data{ii}(kk);
             k=k+1;
         end
@@ -486,8 +493,10 @@ save(filename)
  for kk=1:22
      clear T;
      for ii=1:8
+
          for jj=1:length(TrimmedTF{kk}(:,ii))
              T(ii,jj)=(TrimmedTF{kk}(jj,ii));
+
          end
      end
      Tz{kk}=T;
@@ -534,4 +543,6 @@ for ii=1:22
     eig_vec{ii}=V;
     eig_val{ii}=D;
 end
+
 %% can someone start the Euclidean? This one is stumping me
+
