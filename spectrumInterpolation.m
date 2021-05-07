@@ -5,8 +5,8 @@ function newDat = spectrumInterpolation(data, Fs, Fl, neighborsToSample, neighbo
     
     binStepSize = length(mag) / Fs;
     nextPowerBin = binStepSize * Fl;
-    neighborsToSample = binStepSize * neighborsToSample;
-    neighborsToReplace =  binStepSize * neighborsToReplace;
+    neighborsToSample = uint32(binStepSize * neighborsToSample);
+    neighborsToReplace =  uint32(binStepSize * neighborsToReplace);
     % We have to take care of each end of the spectrum differently.
     % For the first half, the spectra is not reversed.    
     nearestPowerlineHarmonic = nextPowerBin;
