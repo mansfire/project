@@ -18,7 +18,7 @@ for idx = 1:numberOfFiles
     mymodel.length{idx} = emgDataStruct.length_sec;
 end
 
-%% Construct the filters
+%% Construct the filters, and run data through them.
 lp=480;
 hp=30;
 
@@ -28,27 +28,18 @@ bp1  = designfilt('bandpassiir','FilterOrder',20, ...
 
 total_data = cell(1,numberOfFiles);
 for kk=1:numberOfFiles
-    [~, name, ~] = fileparts(fdsGroup4.Files{kk});
-    figure;
     data=mymodel.data{kk};
     data=cell2mat(data); % converts data into matrix format.
-    
-    %% band pass
+
+    % band pass
     fulldata = filtfilt(bp1, data); % No phase shift.
-    
     % Spectrum interpolation to remove 60 hz + harmonic noise. Works in the
     % frequency domain and does not rely on filters. No phase shift.
     for idx = 1:width(data)
         fulldata(:, idx) = spectrumInterpolation(fulldata(:, idx), fs, 60, 3, 2);
-        nexttile;
-        plot(fulldata(:,idx));
-        title(name);
     end
     mymodel.data{kk}=fulldata; % write back to conserve memory.
     mymodel.meanChan{kk} = mean(fulldata,2);
-    nexttile;
-    plot(mymodel.meanChan{kk});
-    title(name);
 end
 
 %% add all the channels for each of the 11 test and validation postures
