@@ -1,188 +1,47 @@
 clc;
 clear all;
-    close all;
-%% hand close%%
-%% Training data%%
-load('Hand Close Training.mat')
-fs=samplingRate ;%sampling rate
+close all;
+
+fdsGroup4 = fileDatastore(fullfile('LDACLASSIFYG4'), 'PreviewFcn', @load, 'ReadFcn', @load, 'IncludeSubfolders', false, 'FileExtensions', '.mat');
+previewData = preview(fdsGroup4); % Peeks into the first file in the data directory
+fs=previewData.samplingRate ;%sampling rate
 dt=1/fs;
-time=(dt:dt:length_sec);
-mymodel.name{1}='hand_close_train';
-mymodel.data{1}=Data;
-%% Validation
-load('Hand Close Validation.mat')
-mymodel.name{2}='hand_close_val';
-mymodel.data{2}=Data;
-%% hand open
-%% Training data%%
-load('Hand Open Train.mat')
-mymodel.name{3}='hand_open_train';
-mymodel.data{3}=Data;
-%% Validation
-load('Hand Open Validation.mat')
-mymodel.name{4}='hand_open_val';
-mymodel.data{4}=Data;
-%% off
-%% Training data%%
-load('Off Train.mat')
-mymodel.name{5}='off_train ';
-mymodel.data{5}=Data;
-%% Validation
-load('Off Validation.mat')
-mymodel.name{6}='off_val';
-mymodel.data{6}=Data;
-%% thumb ab
-%% Training data%%
-load('Thumb Abduction Training.mat')
-mymodel.off_train=Data;
-mymodel.name{7}='thumb_ab_train';
-mymodel.data{7}=Data;
-%% Validation
-load('Thumb Abduction Validation.mat')
-mymodel.name{8}='thumb_ab_val';
-mymodel.data{8}=Data;
-%% thumb add
-%% Training data%%
-load('Thumb Adduction Training.mat')
-mymodel.name{9}='thumb_add_train';
-mymodel.data{9}=Data;
-%% Validation
-load('Thumb Adduction Validation.mat')
-mymodel.name{10}='thumb_add_val';
-mymodel.data{10}=Data;
-%% wrist ext
-%% Training data%%
-load('Wrist Extension Training.mat')
-mymodel.name{11}='wrist_ext_train';
-mymodel.data{11}=Data;
-%% Validation
-load('Wrist Extension Validation.mat')
-mymodel.name{12}='wrist_ext_val';
-mymodel.data{12}=Data;
-%% wrist flex
-%% Training data%%
-load('Wrist Flexion Training.mat')
-mymodel.name{13}='wrist_flex_train';
-mymodel.data{13}=Data;
-%% Validation
-load('Wrist Flexion Validation.mat')
-mymodel.name{14}='wrist_flex_val';
-mymodel.data{14}=Data;
-%% wrist pronation
-%% Training data%%
-load('Wrist Pronation Training.mat')
-mymodel.name{15}='wrist_pronation_train';
-mymodel.data{15}=Data;
-%% Validation
-load('Wrist Pronation Validation.mat')
-mymodel.name{16}='wrist_pronation_val';
-mymodel.data{16}=Data;
-%% wrist radial dev
-%% Training data%%
-load('Wrist Rad Dev Training.mat')
-mymodel.name{17}='wrist_radial_dev_train';
-mymodel.data{17}=Data;
-%% Validation
-load('Wrist Rad Dev Validation.mat')
-mymodel.name{18}='wrist_radial_dev_val';
-mymodel.data{18}=Data;
-%% wrist supination
-%% Training data%%
-load('Wrist Supination Training.mat')
-mymodel.name{19}='wrist_supination_train';
-mymodel.data{19}=Data;
-%% Validation
-load('Wrist Supination Validation.mat')
-mymodel.name{20}='wrist_supination_val';
-mymodel.data{20}=Data;
-%% wrist ulnar dev
-%% Training data%%
-load('Wrist Ulnar Dev Training.mat')
-mymodel.name{21}='wrist_ulnar_dev_train';
-mymodel.data{21}=Data;
-%% Validation
-load('Wrist Ulnar Dev Validation.mat')
-mymodel.name{22}='wrist_ulnar_dev_val.mat';
-mymodel.data{22}=Data;
-for ii=1:22
 
-    for jj=1:length(mymodel.data{ii}{6})
-        mymodel.data{ii}{6}(jj)=0;%% we were told to just remove this channel
-
-    end
+numberOfFiles = length(fdsGroup4.Files);
+% Load the files, pulling their names from the filename.
+for idx = 1:numberOfFiles
+    [~, name, ~] = fileparts(fdsGroup4.Files{idx});
+    mymodel.name{idx} = name;
+    emgDataStruct = read(fdsGroup4);
+    mymodel.data{idx} = emgDataStruct.Data;
+    mymodel.data{idx}{6} = zeros(length(mymodel.data{idx}{6}), 1); % channel 6 was bad. Remove.
+    mymodel.length{idx} = emgDataStruct.length_sec;
 end
-%% filters
+
+%% Construct the filters
 lp=480;
 hp=30;
 n1=60;
 n2=120;
 n3=180;
-for kk=1:22
-    data=mymodel.data{kk};
-     data=[data{1}, data{2}, data{3},data{4},data{5},data{6},data{7},data{8}];
-clear filtdata1;
-clear filtdata2;
-clear filtdata3;
-clear filtdata4;
-clear fulldata;
+
 bp1  = designfilt('bandpassiir','FilterOrder',20, ...
-         'HalfPowerFrequency1',hp,'HalfPowerFrequency2',lp, ...
-         'SampleRate',fs);
-%% band pass
+    'HalfPowerFrequency1',hp,'HalfPowerFrequency2',lp, ...
+    'SampleRate',fs);
 
-% Filter the data and compensate for delay
-D1 = round(mean(grpdelay(bp1))); % filter delay
-a=0;
-
-    bpfilt = filter(bp1,[data; zeros(D1,8)]);
-    filtdata1 = bpfilt(D1+1:end,:);
+for kk=1:numberOfFiles
+    data=mymodel.data{kk};
+    data=cell2mat(data); % converts data into matrix format.
     
-
-n1f1=n1-1;
-n1f2=n1+1;
-notch1 = designfilt('bandstopiir', ...
-  'FilterOrder',16, ...
-  'PassbandFrequency1',n1f1,'PassbandFrequency2',n1f2,'SampleRate',fs);
-
-%% notch 60hz
-% Filter the data and compensate for delay
-D2 = round(mean(grpdelay(notch1))); % filter delay
-
-
-    bpnotch = filter(notch1,[filtdata1(:,:); zeros(D2,8)]);
-    filtdata2 = bpnotch(D2+1:end,:);
-
-
-n2f1=n2-1;
-n2f2=n2+1;
-notch2 = designfilt('bandstopiir', ...
-  'FilterOrder',16, ...
-  'PassbandFrequency1',n2f1,'PassbandFrequency2',n2f2,'SampleRate',fs);
-
-%% notch 120hz
-% Filter the data and compensate for delay
-D3 = round(mean(grpdelay(notch2))); % filter delay
-
-    bpnotch2 = filter(notch2,[filtdata2(:,:); zeros(D3,8)]);
-    filtdata3 = bpnotch2(D3+1:end,:);
-
-
-n3f1=n3-1;
-n3f2=n3+1;
-notch3 = designfilt('bandstopiir', ...
-  'FilterOrder',16, ...
-  'PassbandFrequency1',n3f1,'PassbandFrequency2',n3f2,'SampleRate',fs);
-
-%% notch 180hz
-% Filter the data and compensate for delay
-D4 = round(mean(grpdelay(notch3))); % filter delay
-
-    bpnotch3 = filter(notch3,[filtdata3(:,:); zeros(D4,8)]);
-    filtdata4 = bpnotch3(D4+1:end,:);
-
-fulldata=filtdata4;
-
-ylp.data{kk}=fulldata;
+    %% band pass
+    fulldata = filtfilt(bp1, data); % No phase shift.
+    
+    % Spectrum interpolation to remove 60 hz + harmonic noise. Works in the
+    % frequency domain and does not rely on filters. No phase shift.
+    for idx = 1:width(data)
+        fulldata(:, idx) = spectrumInterpolation(fulldata(:, idx), fs, 60, 3, 2);
+    end
+    ylp.data{kk}=fulldata;
 end
 filename='filtered.mat';
 save(filename)
@@ -190,22 +49,22 @@ save(filename)
 total_data=[];
 %% add all the channels for each of the 11 test and validation postures
 
-for ii=1:22
+for ii=1:numberOfFiles
     total=zeros(1,length(ylp.data{ii}(:,1)));
     for jj=1:8
         for kk=1:length(ylp.data{ii}(:,jj))
-                if jj==6
-                    total(:,kk)=total(:,kk);
-                else
-                    total(:,kk)=total(:,kk)+abs(ylp.data{ii}(kk,jj));
-                end
+            if jj==6
+                total(:,kk)=total(:,kk);
+            else
+                total(:,kk)=total(:,kk)+abs(ylp.data{ii}(kk,jj));
             end
+        end
     end
     total_data{ii}=total;
 end
 
 %% smooth out the data to make it easuer to analyze
-for ii=1:22
+for ii=1:numberOfFiles
     Smoothed_data{ii}=smoothdata(total_data{ii},'gaussian',150);
     std_data(ii)=std(Smoothed_data{ii});
     mean_data(ii)=mean(Smoothed_data{ii});
@@ -221,16 +80,16 @@ data1=smoothdata(abs(ylp.data{1}(:,2)),'gaussian',300);
 mean1=mean(data1);
 std1=std(data1);
 for jj=300:length(data1)
-   if (data1(jj)>1.5*mean1+1.5*std1) &&(S==0)
-         S=1;
-         j=j+1;
-         Start1=[Start1 jj];
-     elseif (data1(jj)<mean1-1.1*std1) &&(S==1)
-         S=0;
-         Stop1=[Stop1 jj];
-            
-   end
-
+    if (data1(jj)>1.5*mean1+1.5*std1) &&(S==0)
+        S=1;
+        j=j+1;
+        Start1=[Start1 jj];
+    elseif (data1(jj)<mean1-1.1*std1) &&(S==1)
+        S=0;
+        Stop1=[Stop1 jj];
+        
+    end
+    
 end
 if length(Stop1)<length(Start1)
     Stop1=[Stop1 240100];
@@ -247,21 +106,21 @@ data2=smoothdata(abs(ylp.data{2}(:,2)),'gaussian',300);
 mean2=mean(data2);
 std2=std(data2);
 for jj=300:length(data2)
-   if (data2(jj)>1.5*mean2+std2) &&(S==0)
-         S=1;
-         j=j+1;
-         Start2=[Start2 jj];
-     elseif (data2(jj)<mean2-1.1*std2) &&(S==1)
-         S=0;
-         Stop2=[Stop2 jj];
-            
-   end
-
+    if (data2(jj)>1.5*mean2+std2) &&(S==0)
+        S=1;
+        j=j+1;
+        Start2=[Start2 jj];
+    elseif (data2(jj)<mean2-1.1*std2) &&(S==1)
+        S=0;
+        Stop2=[Stop2 jj];
+        
+    end
+    
 end
 if length(Stop2)<length(Start2)
     Stop2=[Stop2 jj];
 end
-    
+
 Start{2}=Start2;
 Stop{2}=Stop2;
 
@@ -275,16 +134,16 @@ data3=smoothdata(abs(ylp.data{3}(:,5)),'gaussian',300);
 mean3=mean(data3);
 std3=std(data3);
 for jj=300:length(data3)
-   if (data3(jj)>1.7*mean3+1.3*std3) &&(S==0)
-         S=1;
-         j=j+1;
-         Start3=[Start3 jj];
-     elseif (data3(jj)<mean3-0.9*std3) &&(S==1)
-         S=0;
-         Stop3=[Stop3 jj];
-            
-   end
-
+    if (data3(jj)>1.7*mean3+1.3*std3) &&(S==0)
+        S=1;
+        j=j+1;
+        Start3=[Start3 jj];
+    elseif (data3(jj)<mean3-0.9*std3) &&(S==1)
+        S=0;
+        Stop3=[Stop3 jj];
+        
+    end
+    
 end
 if length(Stop3)<length(Start3)
     Stop3=[Stop3 jj];
@@ -302,16 +161,16 @@ data4=smoothdata(abs(ylp.data{4}(:,5)),'gaussian',300);
 mean4=mean(data4);
 std4=std(data4);
 for jj=300:length(data4)
-   if (data4(jj)>1.3*mean4+1.6*std4) &&(S==0)
-         S=1;
-         j=j+1;
-         Start4=[Start4 jj];
-     elseif (data4(jj)<mean4-std4) &&(S==1)
-         S=0;
-         Stop4=[Stop4 jj];
-            
-   end
-
+    if (data4(jj)>1.3*mean4+1.6*std4) &&(S==0)
+        S=1;
+        j=j+1;
+        Start4=[Start4 jj];
+    elseif (data4(jj)<mean4-std4) &&(S==1)
+        S=0;
+        Stop4=[Stop4 jj];
+        
+    end
+    
 end
 Start{4}=Start4;
 Stop{4}=Stop4;
@@ -343,19 +202,19 @@ data7=smoothdata(abs(ylp.data{7}(:,8)),'gaussian',900);
 mean7=mean(data7);
 std7=std(data7);
 for jj=300:length(data7)
-   if (data7(jj)>1.1*mean7+1.2*std7) &&(S==0)
-         S=1;
-         j=j+1;
-         Start7=[Start7 jj];
-     elseif (data7(jj)<(mean7-std7)) &&(S==1)
-         S=0;
-         Stop7=[Stop7 jj];
-            
-   end
-
+    if (data7(jj)>1.1*mean7+1.2*std7) &&(S==0)
+        S=1;
+        j=j+1;
+        Start7=[Start7 jj];
+    elseif (data7(jj)<(mean7-std7)) &&(S==1)
+        S=0;
+        Stop7=[Stop7 jj];
+        
+    end
+    
 end
 if length(Stop7)<length(Start7)
-    Stop7=[Stop7 jj];      
+    Stop7=[Stop7 jj];
 end
 Start{7}=Start7;
 Stop{7}=Stop7;
@@ -371,19 +230,19 @@ data8=smoothdata(abs(ylp.data{8}(:,8)),'gaussian',3000);
 mean8=mean(data8);
 std8=std(data8);
 for jj=300:length(data8)
-   if (data8(jj)>mean8+0.6*std8) &&(S==0)
-         S=1;
-         j=j+1;
-         Start8=[Start8 jj];
-     elseif (data8(jj)<mean8) &&(S==1)
-         S=0;
-         Stop8=[Stop8 jj];
-            
-   end
-
+    if (data8(jj)>mean8+0.6*std8) &&(S==0)
+        S=1;
+        j=j+1;
+        Start8=[Start8 jj];
+    elseif (data8(jj)<mean8) &&(S==1)
+        S=0;
+        Stop8=[Stop8 jj];
+        
+    end
+    
 end
 if length(Stop8)<length(Start8)
-  Stop8=[Stop8 jj];
+    Stop8=[Stop8 jj];
 end
 Start{8}=Start8;
 Stop{8}=Stop8;
@@ -398,19 +257,19 @@ data9=smoothdata(abs(ylp.data{9}(:,4)),'gaussian',5000);
 mean9=mean(data9);
 std9=std(data9);
 for jj=300:length(data9)
-   if (data9(jj)>mean9) &&(S==0)
-         S=1;
-         j=j+1;
-         Start9=[Start9 jj];
-     elseif (data9(jj)<mean9-0.33*std9) &&(S==1)
-         S=0;
-         Stop9=[Stop9 jj];
-            
-   end
-
+    if (data9(jj)>mean9) &&(S==0)
+        S=1;
+        j=j+1;
+        Start9=[Start9 jj];
+    elseif (data9(jj)<mean9-0.33*std9) &&(S==1)
+        S=0;
+        Stop9=[Stop9 jj];
+        
+    end
+    
 end
 if length(Stop9)<length(Start9)
-  Stop9=[Stop9 jj];
+    Stop9=[Stop9 jj];
 end
 Start{9}=Start9;
 Stop{9}=Stop9;
@@ -424,19 +283,19 @@ data10=smoothdata(abs(ylp.data{10}(:,4)),'gaussian',5000);
 mean10=mean(data10);
 std10=std(data10);
 for jj=300:length(data10)
-   if (data10(jj)>mean10) &&(S==0)
-         S=1;
-         j=j+1;
-         Start10=[Start10 jj];
-     elseif (data10(jj)<mean10-0.43*std10) &&(S==1)
-         S=0;
-         Stop10=[Stop10 jj];
-            
-   end
-
+    if (data10(jj)>mean10) &&(S==0)
+        S=1;
+        j=j+1;
+        Start10=[Start10 jj];
+    elseif (data10(jj)<mean10-0.43*std10) &&(S==1)
+        S=0;
+        Stop10=[Stop10 jj];
+        
+    end
+    
 end
 if length(Stop10)<length(Start10)
-  Stop10=[Stop10 jj];
+    Stop10=[Stop10 jj];
 end
 Start{10}=Start10;
 Stop{10}=Stop10;
@@ -446,15 +305,15 @@ save(filename)
 %% new data set
 
 
-for ii=1:22
+for ii=1:numberOfFiles
     k=1;
     start=Start{ii};
     stop=Stop{ii};
-
+    
     for jj=1:length(start)%look at each start point
         
         for kk=start(jj):stop(jj)%look at the data between start 1 and stop 1, etc.
-
+            
             New{ii}(k)=Smoothed_data{ii}(kk);
             k=k+1;
         end
@@ -462,10 +321,10 @@ for ii=1:22
 end
 
 
-        
+
 %% index on data
 p=[];
-for jj=1:22
+for jj=1:numberOfFiles
     clear p;
     start=Start{ii};
     stop=Stop{ii};
@@ -474,92 +333,92 @@ for jj=1:22
     end
     P{ii}=p;
 end
-%% create trimmed data set% this looks at 22 postures (11 X2) and 8 channels and only takes th on aspects of each
+%% create trimmed data set% this looks at numberOfFiles postures (11 X2) and 8 channels and only takes th on aspects of each
 TrimmedTF=[];
- for ii=1:22
-     for jj=1:8
-         for kk=1:length(p)
-             Trim(jj,kk)=mymodel.data{ii}{jj}(P{ii}(kk));
-         end
-     end
-     TrimmedTF{ii}=Trim;
- end
- 
- filename='trimmed.mat';
+for ii=1:numberOfFiles
+    for jj=1:8
+        for kk=1:length(p)
+            Trim(jj,kk)=mymodel.data{ii}{jj}(P{ii}(kk));
+        end
+    end
+    TrimmedTF{ii}=Trim;
+end
+
+filename='trimmed.mat';
 save(filename)
- %% off data prep
- binsize=0.05*fs;
+%% off data prep
+binsize=0.05*fs;
 
- for kk=1:22
-     clear T;
-     for ii=1:8
-
-         for jj=1:length(TrimmedTF{kk}(:,ii))
-             T(ii,jj)=(TrimmedTF{kk}(jj,ii));
-
-         end
-     end
-     Tz{kk}=T;
- end
- % extract each of our 4 choosen features, please see respective files
- for jj=1:22
-     nBin=floor(length(Tz{jj})/binsize);
-     Bz=floor(linspace(1,length(Tz{jj}),nBin));
-     Ez=[];
-     ZC_TZ=Ez;
-     SSC_TZ=Ez;
-     MAV_TZ=Ez;
-     WL_TZ=Ez;
-     for kk=1:8
-
-     for ii=1:nBin-1
-         Dz=Bz(ii+1);
+for kk=1:numberOfFiles
+    clear T;
+    for ii=1:8
         
-         ZC_TZ(kk,ii)=ZCz(Tz{jj}(kk,Bz(ii):Dz));
-         MAV_TZ(kk,ii)=MAVz(Tz{jj}(kk,Bz(ii):Dz));
-         SSC_TZ(kk,ii)=SSCz(Tz{jj}(kk,Bz(ii):Dz));
-         WL_TZ(kk,ii)=WLz(Tz{jj}(kk,Bz(ii):Dz));
-
-     end
-     ZC{jj}=ZC_TZ;
-     MAV{jj}=MAV_TZ;
-     SSc{jj}=SSC_TZ;
-     WL{jj}=WL_TZ;
-
-     end
-
- end
- cord=0;
+        for jj=1:length(TrimmedTF{kk}(:,ii))
+            T(ii,jj)=(TrimmedTF{kk}(jj,ii));
+            
+        end
+    end
+    Tz{kk}=T;
+end
+% extract each of our 4 choosen features, please see respective files
+for jj=1:numberOfFiles
+    nBin=floor(length(Tz{jj})/binsize);
+    Bz=floor(linspace(1,length(Tz{jj}),nBin));
+    Ez=[];
+    ZC_TZ=Ez;
+    SSC_TZ=Ez;
+    MAV_TZ=Ez;
+    WL_TZ=Ez;
+    for kk=1:8
+        
+        for ii=1:nBin-1
+            Dz=Bz(ii+1);
+            
+            ZC_TZ(kk,ii)=ZCz(Tz{jj}(kk,Bz(ii):Dz));
+            MAV_TZ(kk,ii)=MAVz(Tz{jj}(kk,Bz(ii):Dz));
+            SSC_TZ(kk,ii)=SSCz(Tz{jj}(kk,Bz(ii):Dz));
+            WL_TZ(kk,ii)=WLz(Tz{jj}(kk,Bz(ii):Dz));
+            
+        end
+        ZC{jj}=ZC_TZ;
+        MAV{jj}=MAV_TZ;
+        SSc{jj}=SSC_TZ;
+        WL{jj}=WL_TZ;
+        
+    end
+    
+end
+cord=0;
 %% covariance
-for ii=1:22
+for ii=1:numberOfFiles
     clear a
     clear V
     clear D
     a=[WL{ii};SSc{ii};MAV{ii};ZC{ii}];
     cord=cord+1;
-    cov_mat{cord}=cov(a');   
+    cov_mat{cord}=cov(a');
     a_mat{ii}=a;
     [V,D] = eig(cov_mat{ii});
     eig_vec{ii}=V;
     eig_val{ii}=D;
 end
-    eig_val2=eig_val;%just so we don't mess up anything
-    for ii=1:22
-        kk=0;
-        eig_cut=10^-6;
-        for jj=1:32
-            if eig_val2{ii}(jj,jj)>eig_cut
-                eig_highest=eig_val2{ii}(jj,jj);
-                remove=jj;
-                kk=kk+1;
-                 eig_val2{ii}(remove,remove)=0;
-                 eig_new{ii}(kk,:)=eig_val{ii}(remove,remove);
-            end
-
+eig_val2=eig_val;%just so we don't mess up anything
+for ii=1:numberOfFiles
+    kk=0;
+    eig_cut=10^-6;
+    for jj=1:32
+        if eig_val2{ii}(jj,jj)>eig_cut
+            eig_highest=eig_val2{ii}(jj,jj);
+            remove=jj;
+            kk=kk+1;
+            eig_val2{ii}(remove,remove)=0;
+            eig_new{ii}(kk,:)=eig_val{ii}(remove,remove);
         end
-          
-
+        
     end
+    
+    
+end
 
 %% can someone start the Euclidean? This one is stumping me
 
