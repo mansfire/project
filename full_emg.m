@@ -1,103 +1,45 @@
 clc;
 clear all;
-    close all;
-%% hand close%%
-%% Training data%%
+close all;
 
-fdsGroup4 = fileDatastore(fullfile('LDACLASSIFYG4'), 'PreviewFcn', @load, 'ReadFcn', @load, 'IncludeSubfolders', true, 'FileExtensions', '.mat');
+fdsGroup4 = fileDatastore(fullfile('LDACLASSIFYG4'), 'PreviewFcn', @load, 'ReadFcn', @load, 'IncludeSubfolders', false, 'FileExtensions', '.mat');
 previewData = preview(fdsGroup4); % Peeks into the first file in the data directory
 fs=previewData.samplingRate ;%sampling rate
 dt=1/fs;
 
-
+numberOfFiles = length(fdsGroup4.Files)
 % Load the files, pulling their names from the filename.
-for idx = 1:length(fdsGroup4.Files)
+for idx = 1:numberOfFiles
     [~, name, ~] = fileparts(fdsGroup4.Files{idx});
     mymodel.name{idx} = name;
     emgDataStruct = read(fdsGroup4);
     mymodel.data{idx} = emgDataStruct.Data;
+    mymodel.data{idx}{6} = zeros(length(mymodel.data{idx}{6}), 1); % channel 6 was bad. Remove.
     mymodel.length{idx} = emgDataStruct.length_sec;
 end
 
-for ii=1:22
-
-    for jj=1:length(mymodel.data{ii}{6})
-        mymodel.data{ii}{6}(jj)=0;%% we were told to just remove this channel
-
-    end
-end
-%% filters
+%% Construct the filters
 lp=480;
 hp=30;
 n1=60;
 n2=120;
 n3=180;
-for kk=1:22
-    data=mymodel.data{kk};
-     data=[data{1}, data{2}, data{3},data{4},data{5},data{6},data{7},data{8}];
-clear filtdata1;
-clear filtdata2;
-clear filtdata3;
-clear filtdata4;
-clear fulldata;
+
 bp1  = designfilt('bandpassiir','FilterOrder',20, ...
-         'HalfPowerFrequency1',hp,'HalfPowerFrequency2',lp, ...
-         'SampleRate',fs);
-%% band pass
+        'HalfPowerFrequency1',hp,'HalfPowerFrequency2',lp, ...
+        'SampleRate',fs);
 
-% Filter the data and compensate for delay
-D1 = round(mean(grpdelay(bp1))); % filter delay
-a=0;
-
-    bpfilt = filter(bp1,[data; zeros(D1,8)]);
-    filtdata1 = bpfilt(D1+1:end,:);
+for kk=1:numberOfFiles
+    data=mymodel.data{kk};
+    data=cell2mat(data); % converts data into matrix format.
     
-
-n1f1=n1-1;
-n1f2=n1+1;
-notch1 = designfilt('bandstopiir', ...
-  'FilterOrder',16, ...
-  'PassbandFrequency1',n1f1,'PassbandFrequency2',n1f2,'SampleRate',fs);
-
-%% notch 60hz
-% Filter the data and compensate for delay
-D2 = round(mean(grpdelay(notch1))); % filter delay
-
-
-    bpnotch = filter(notch1,[filtdata1(:,:); zeros(D2,8)]);
-    filtdata2 = bpnotch(D2+1:end,:);
-
-
-n2f1=n2-1;
-n2f2=n2+1;
-notch2 = designfilt('bandstopiir', ...
-  'FilterOrder',16, ...
-  'PassbandFrequency1',n2f1,'PassbandFrequency2',n2f2,'SampleRate',fs);
-
-%% notch 120hz
-% Filter the data and compensate for delay
-D3 = round(mean(grpdelay(notch2))); % filter delay
-
-    bpnotch2 = filter(notch2,[filtdata2(:,:); zeros(D3,8)]);
-    filtdata3 = bpnotch2(D3+1:end,:);
-
-
-n3f1=n3-1;
-n3f2=n3+1;
-notch3 = designfilt('bandstopiir', ...
-  'FilterOrder',16, ...
-  'PassbandFrequency1',n3f1,'PassbandFrequency2',n3f2,'SampleRate',fs);
-
-%% notch 180hz
-% Filter the data and compensate for delay
-D4 = round(mean(grpdelay(notch3))); % filter delay
-
-    bpnotch3 = filter(notch3,[filtdata3(:,:); zeros(D4,8)]);
-    filtdata4 = bpnotch3(D4+1:end,:);
-
-fulldata=filtdata4;
-
-ylp.data{kk}=fulldata;
+    %% band pass
+    fulldata = filtfilt(bp1, data);
+    
+    for idx = 1:width(data)
+        fulldata(:, idx) = spectrumInterpolation(data(:, idx), fs, 60, 3, 2);
+    end
+    ylp.data{kk}=fulldata;
 end
 filename='filtered.mat';
 save(filename)
@@ -105,7 +47,7 @@ save(filename)
 total_data=[];
 %% add all the channels for each of the 11 test and validation postures
 
-for ii=1:22
+for ii=1:numberOfFiles
     total=zeros(1,length(ylp.data{ii}(:,1)));
     for jj=1:8
         for kk=1:length(ylp.data{ii}(:,jj))
@@ -120,7 +62,7 @@ for ii=1:22
 end
 
 %% smooth out the data to make it easuer to analyze
-for ii=1:22
+for ii=1:numberOfFiles
     Smoothed_data{ii}=smoothdata(total_data{ii},'gaussian',150);
     std_data(ii)=std(Smoothed_data{ii});
     mean_data(ii)=mean(Smoothed_data{ii});
@@ -361,7 +303,7 @@ save(filename)
 %% new data set
 
 
-for ii=1:22
+for ii=1:numberOfFiles
     k=1;
     start=Start{ii};
     stop=Stop{ii};
@@ -380,7 +322,7 @@ end
         
 %% index on data
 p=[];
-for jj=1:22
+for jj=1:numberOfFiles
     clear p;
     start=Start{ii};
     stop=Stop{ii};
@@ -389,9 +331,9 @@ for jj=1:22
     end
     P{ii}=p;
 end
-%% create trimmed data set% this looks at 22 postures (11 X2) and 8 channels and only takes th on aspects of each
+%% create trimmed data set% this looks at numberOfFiles postures (11 X2) and 8 channels and only takes th on aspects of each
 TrimmedTF=[];
- for ii=1:22
+ for ii=1:numberOfFiles
      for jj=1:8
          for kk=1:length(p)
              Trim(jj,kk)=mymodel.data{ii}{jj}(P{ii}(kk));
@@ -405,7 +347,7 @@ save(filename)
  %% off data prep
  binsize=0.05*fs;
 
- for kk=1:22
+ for kk=1:numberOfFiles
      clear T;
      for ii=1:8
 
@@ -417,7 +359,7 @@ save(filename)
      Tz{kk}=T;
  end
  % extract each of our 4 choosen features, please see respective files
- for jj=1:22
+ for jj=1:numberOfFiles
      nBin=floor(length(Tz{jj})/binsize);
      Bz=floor(linspace(1,length(Tz{jj}),nBin));
      Ez=[];
@@ -446,7 +388,7 @@ save(filename)
  end
  cord=0;
 %% covariance
-for ii=1:22
+for ii=1:numberOfFiles
     clear a
     clear V
     clear D
@@ -459,7 +401,7 @@ for ii=1:22
     eig_val{ii}=D;
 end
     eig_val2=eig_val;%just so we don't mess up anything
-    for ii=1:22
+    for ii=1:numberOfFiles
         kk=0;
         eig_cut=10^-6;
         for jj=1:32
