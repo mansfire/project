@@ -1,6 +1,3 @@
-clc;
-clear all;
-close all;
 
 fdsGroup4 = fileDatastore(fullfile('LDACLASSIFYG4'), 'PreviewFcn', @load, 'ReadFcn', @load, 'IncludeSubfolders', false, 'FileExtensions', '.mat');
 previewData = preview(fdsGroup4); % Peeks into the first file in the data directory
@@ -14,7 +11,8 @@ for idx = 1:numberOfFiles
     mymodel.name{idx} = name;
     emgDataStruct = read(fdsGroup4);
     mymodel.data{idx} = emgDataStruct.Data;
-    mymodel.data{idx}{6} = zeros(length(mymodel.data{idx}{6}), 1); % channel 6 was bad. Remove.
+    %mymodel.data{idx}{6} = zeros(length(mymodel.data{idx}{6}), 1); %
+    %channel 6 might be bad. Remove?
     mymodel.length{idx} = emgDataStruct.length_sec;
 end
 
@@ -28,6 +26,8 @@ bp1  = designfilt('bandpassiir','FilterOrder',20, ...
 
 total_data = cell(1,numberOfFiles);
 for kk=1:numberOfFiles
+    [~, name, ~] = fileparts(fdsGroup4.Files{kk});
+    figure;
     data=mymodel.data{kk};
     data=cell2mat(data); % converts data into matrix format.
     
@@ -38,9 +38,15 @@ for kk=1:numberOfFiles
     % frequency domain and does not rely on filters. No phase shift.
     for idx = 1:width(data)
         fulldata(:, idx) = spectrumInterpolation(fulldata(:, idx), fs, 60, 3, 2);
+        nexttile;
+        plot(fulldata(:,idx));
+        title(name);
     end
     mymodel.data{kk}=fulldata; % write back to conserve memory.
     mymodel.meanChan{kk} = mean(fulldata,2);
+    nexttile;
+    plot(mymodel.meanChan{kk});
+    title(name);
 end
 
 %% add all the channels for each of the 11 test and validation postures
@@ -57,11 +63,11 @@ for ii=1:numberOfFiles
 end
 %% for each posture, try to capture apptox. 50% (0.5) of the data, us whichever channel is "prettiest"
 S=0;
-j=0;
-Start=[];
 Start1=[];
 Stop=[];
 Stop1=[];
+j=0;
+Start=[];
 data1=smoothdata(abs(mymodel.data{1}(:,2)),'gaussian',300);
 mean1=mean(data1);
 std1=std(data1);
