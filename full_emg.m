@@ -14,8 +14,7 @@ for idx = 1:numberOfFiles
     mymodel.name{idx} = name;
     emgDataStruct = read(fdsGroup4);
     mymodel.data{idx} = emgDataStruct.Data;
-    %mymodel.data{idx}{6} = zeros(length(mymodel.data{idx}{6}), 1); %
-    %channel 6 might be bad. Remove?
+    mymodel.data{idx}{6} = zeros(length(mymodel.data{idx}{6}), 1); %channel 6 might be bad. Remove?
     mymodel.length{idx} = emgDataStruct.length_sec;
 end
 
