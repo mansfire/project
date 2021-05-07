@@ -26,6 +26,7 @@ bp1  = designfilt('bandpassiir','FilterOrder',20, ...
     'HalfPowerFrequency1',hp,'HalfPowerFrequency2',lp, ...
     'SampleRate',fs);
 
+total_data = cell(1,numberOfFiles);
 for kk=1:numberOfFiles
     data=mymodel.data{kk};
     data=cell2mat(data); % converts data into matrix format.
@@ -38,29 +39,17 @@ for kk=1:numberOfFiles
     for idx = 1:width(data)
         fulldata(:, idx) = spectrumInterpolation(fulldata(:, idx), fs, 60, 3, 2);
     end
-    ylp.data{kk}=fulldata;
+    mymodel.data{kk}=fulldata; % write back to conserve memory.
+    mymodel.meanChan{kk} = mean(fulldata,2);
 end
-filename='filtered.mat';
-save(filename)
 
-total_data=[];
 %% add all the channels for each of the 11 test and validation postures
-
 for ii=1:numberOfFiles
-    total=zeros(1,length(ylp.data{ii}(:,1)));
-    for jj=1:8
-        for kk=1:length(ylp.data{ii}(:,jj))
-            if jj==6
-                total(:,kk)=total(:,kk);
-            else
-                total(:,kk)=total(:,kk)+abs(ylp.data{ii}(kk,jj));
-            end
-        end
-    end
-    total_data{ii}=total;
+    total_data{idx}=sum(abs(mymodel.data{idx}), 2); % Rectifies the data, then adds all channels together.
 end
 
 %% smooth out the data to make it easuer to analyze
+Smoothed_data = cell(1,numberOfFiles);
 for ii=1:numberOfFiles
     Smoothed_data{ii}=smoothdata(total_data{ii},'gaussian',150);
     std_data(ii)=std(Smoothed_data{ii});
@@ -73,7 +62,7 @@ Start=[];
 Start1=[];
 Stop=[];
 Stop1=[];
-data1=smoothdata(abs(ylp.data{1}(:,2)),'gaussian',300);
+data1=smoothdata(abs(mymodel.data{1}(:,2)),'gaussian',300);
 mean1=mean(data1);
 std1=std(data1);
 for jj=300:length(data1)
@@ -99,7 +88,7 @@ j=0;
 Start2=[];
 
 Stop2=[];
-data2=smoothdata(abs(ylp.data{2}(:,2)),'gaussian',300);
+data2=smoothdata(abs(mymodel.data{2}(:,2)),'gaussian',300);
 mean2=mean(data2);
 std2=std(data2);
 for jj=300:length(data2)
@@ -127,7 +116,7 @@ j=0;
 Start3=[];
 
 Stop3=[];
-data3=smoothdata(abs(ylp.data{3}(:,5)),'gaussian',300);
+data3=smoothdata(abs(mymodel.data{3}(:,5)),'gaussian',300);
 mean3=mean(data3);
 std3=std(data3);
 for jj=300:length(data3)
@@ -154,7 +143,7 @@ j=0;
 Start4=[];
 
 Stop4=[];
-data4=smoothdata(abs(ylp.data{4}(:,5)),'gaussian',300);
+data4=smoothdata(abs(mymodel.data{4}(:,5)),'gaussian',300);
 mean4=mean(data4);
 std4=std(data4);
 for jj=300:length(data4)
@@ -195,7 +184,7 @@ j=0;
 Start7=[];
 
 Stop7=[];
-data7=smoothdata(abs(ylp.data{7}(:,8)),'gaussian',900);
+data7=smoothdata(abs(mymodel.data{7}(:,8)),'gaussian',900);
 mean7=mean(data7);
 std7=std(data7);
 for jj=300:length(data7)
@@ -223,7 +212,7 @@ j=0;
 Start8=[];
 
 Stop8=[];
-data8=smoothdata(abs(ylp.data{8}(:,8)),'gaussian',3000);
+data8=smoothdata(abs(mymodel.data{8}(:,8)),'gaussian',3000);
 mean8=mean(data8);
 std8=std(data8);
 for jj=300:length(data8)
@@ -250,7 +239,7 @@ j=0;
 Start9=[];
 
 Stop9=[];
-data9=smoothdata(abs(ylp.data{9}(:,4)),'gaussian',5000);
+data9=smoothdata(abs(mymodel.data{9}(:,4)),'gaussian',5000);
 mean9=mean(data9);
 std9=std(data9);
 for jj=300:length(data9)
@@ -276,7 +265,7 @@ j=0;
 Start10=[];
 
 Stop10=[];
-data10=smoothdata(abs(ylp.data{10}(:,4)),'gaussian',5000);
+data10=smoothdata(abs(mymodel.data{10}(:,4)),'gaussian',5000);
 mean10=mean(data10);
 std10=std(data10);
 for jj=300:length(data10)
