@@ -21,9 +21,6 @@ end
 %% Construct the filters
 lp=480;
 hp=30;
-n1=60;
-n2=120;
-n3=180;
 
 bp1  = designfilt('bandpassiir','FilterOrder',20, ...
     'HalfPowerFrequency1',hp,'HalfPowerFrequency2',lp, ...
