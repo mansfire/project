@@ -323,26 +323,29 @@ end
 
 
 %% index on data
-p=[];
-for jj=1:numberOfFiles
+
+
+for jj=1:22
     clear p;
+    p=[];
     start=Start{ii};
     stop=Stop{ii};
-    for ii=1:length(Start1)
-        p=[p Start1(ii):Stop1(ii)];
+    for ii=1:length(start)
+        p=[p start(ii):stop(ii)];
     end
-    P{ii}=p;
+    P{jj}=p;
 end
-%% create trimmed data set% this looks at numberOfFiles postures (11 X2) and 8 channels and only takes th on aspects of each
+%% create trimmed data set% this looks at 22 postures (11 X2) and 8 channels and only takes th on aspects of each
 TrimmedTF=[];
-for ii=1:numberOfFiles
-    for jj=1:8
-        for kk=1:length(p)
-            Trim(jj,kk)=mymodel.data{ii}{jj}(P{ii}(kk));
-        end
-    end
-    TrimmedTF{ii}=Trim;
-end
+ for ii=1:22
+     for jj=1:8
+         for kk=1:length(P{ii})
+             Trim(jj,kk)=mymodel.data{ii}{jj}(P{ii}(kk));
+         end
+     end
+     TrimmedTF{ii}=Trim;
+ end
+
 
 filename='trimmed.mat';
 save(filename)
