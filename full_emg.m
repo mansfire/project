@@ -34,8 +34,10 @@ for kk=1:numberOfFiles
     data=cell2mat(data); % converts data into matrix format.
     
     %% band pass
-    fulldata = filtfilt(bp1, data);
+    fulldata = filtfilt(bp1, data); % No phase shift.
     
+    % Spectrum interpolation to remove 60 hz + harmonic noise. Works in the
+    % frequency domain and does not rely on filters. No phase shift.
     for idx = 1:width(data)
         fulldata(:, idx) = spectrumInterpolation(fulldata(:, idx), fs, 60, 3, 2);
     end
