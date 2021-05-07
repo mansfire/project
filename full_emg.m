@@ -3,107 +3,22 @@ clear all;
     close all;
 %% hand close%%
 %% Training data%%
-load('Hand Close Training.mat')
-fs=samplingRate ;%sampling rate
+
+fdsGroup4 = fileDatastore(fullfile('LDACLASSIFYG4'), 'PreviewFcn', @load, 'ReadFcn', @load, 'IncludeSubfolders', true, 'FileExtensions', '.mat');
+previewData = preview(fdsGroup4); % Peeks into the first file in the data directory
+fs=previewData.samplingRate ;%sampling rate
 dt=1/fs;
-time=(dt:dt:length_sec);
-mymodel.name{1}='hand_close_train';
-mymodel.data{1}=Data;
-%% Validation
-load('Hand Close Validation.mat')
-mymodel.name{2}='hand_close_val';
-mymodel.data{2}=Data;
-%% hand open
-%% Training data%%
-load('Hand Open Train.mat')
-mymodel.name{3}='hand_open_train';
-mymodel.data{3}=Data;
-%% Validation
-load('Hand Open Validation.mat')
-mymodel.name{4}='hand_open_val';
-mymodel.data{4}=Data;
-%% off
-%% Training data%%
-load('Off Train.mat')
-mymodel.name{5}='off_train ';
-mymodel.data{5}=Data;
-%% Validation
-load('Off Validation.mat')
-mymodel.name{6}='off_val';
-mymodel.data{6}=Data;
-%% thumb ab
-%% Training data%%
-load('Thumb Abduction Training.mat')
-mymodel.off_train=Data;
-mymodel.name{7}='thumb_ab_train';
-mymodel.data{7}=Data;
-%% Validation
-load('Thumb Abduction Validation.mat')
-mymodel.name{8}='thumb_ab_val';
-mymodel.data{8}=Data;
-%% thumb add
-%% Training data%%
-load('Thumb Adduction Training.mat')
-mymodel.name{9}='thumb_add_train';
-mymodel.data{9}=Data;
-%% Validation
-load('Thumb Adduction Validation.mat')
-mymodel.name{10}='thumb_add_val';
-mymodel.data{10}=Data;
-%% wrist ext
-%% Training data%%
-load('Wrist Extension Training.mat')
-mymodel.name{11}='wrist_ext_train';
-mymodel.data{11}=Data;
-%% Validation
-load('Wrist Extension Validation.mat')
-mymodel.name{12}='wrist_ext_val';
-mymodel.data{12}=Data;
-%% wrist flex
-%% Training data%%
-load('Wrist Flexion Training.mat')
-mymodel.name{13}='wrist_flex_train';
-mymodel.data{13}=Data;
-%% Validation
-load('Wrist Flexion Validation.mat')
-mymodel.name{14}='wrist_flex_val';
-mymodel.data{14}=Data;
-%% wrist pronation
-%% Training data%%
-load('Wrist Pronation Training.mat')
-mymodel.name{15}='wrist_pronation_train';
-mymodel.data{15}=Data;
-%% Validation
-load('Wrist Pronation Validation.mat')
-mymodel.name{16}='wrist_pronation_val';
-mymodel.data{16}=Data;
-%% wrist radial dev
-%% Training data%%
-load('Wrist Rad Dev Training.mat')
-mymodel.name{17}='wrist_radial_dev_train';
-mymodel.data{17}=Data;
-%% Validation
-load('Wrist Rad Dev Validation.mat')
-mymodel.name{18}='wrist_radial_dev_val';
-mymodel.data{18}=Data;
-%% wrist supination
-%% Training data%%
-load('Wrist Supination Training.mat')
-mymodel.name{19}='wrist_supination_train';
-mymodel.data{19}=Data;
-%% Validation
-load('Wrist Supination Validation.mat')
-mymodel.name{20}='wrist_supination_val';
-mymodel.data{20}=Data;
-%% wrist ulnar dev
-%% Training data%%
-load('Wrist Ulnar Dev Training.mat')
-mymodel.name{21}='wrist_ulnar_dev_train';
-mymodel.data{21}=Data;
-%% Validation
-load('Wrist Ulnar Dev Validation.mat')
-mymodel.name{22}='wrist_ulnar_dev_val.mat';
-mymodel.data{22}=Data;
+
+
+% Load the files, pulling their names from the filename.
+for idx = 1:length(fdsGroup4.Files)
+    [~, name, ~] = fileparts(fdsGroup4.Files{idx});
+    mymodel.name{idx} = name;
+    emgDataStruct = read(fdsGroup4);
+    mymodel.data{idx} = emgDataStruct.Data;
+    mymodel.length{idx} = emgDataStruct.length_sec;
+end
+
 for ii=1:22
 
     for jj=1:length(mymodel.data{ii}{6})
