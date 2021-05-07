@@ -37,7 +37,7 @@ for kk=1:numberOfFiles
     fulldata = filtfilt(bp1, data);
     
     for idx = 1:width(data)
-        fulldata(:, idx) = spectrumInterpolation(data(:, idx), fs, 60, 3, 2);
+        fulldata(:, idx) = spectrumInterpolation(fulldata(:, idx), fs, 60, 3, 2);
     end
     ylp.data{kk}=fulldata;
 end
