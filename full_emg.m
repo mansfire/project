@@ -373,10 +373,10 @@ for jj=1:numberOfFiles
         for ii=1:nBin-1
             Dz=Bz(ii+1);
             
-            ZC_TZ(kk,ii)=ZCz(Tz{jj}(kk,Bz(ii):Dz));
-            MAV_TZ(kk,ii)=MAVz(Tz{jj}(kk,Bz(ii):Dz));
-            SSC_TZ(kk,ii)=SSCz(Tz{jj}(kk,Bz(ii):Dz));
-            WL_TZ(kk,ii)=WLz(Tz{jj}(kk,Bz(ii):Dz));
+            ZC_TZ(kk,ii)=ZCz(Tz{jj}(kk,Bz(ii):Dz));%%zero corrsing
+            MAV_TZ(kk,ii)=MAVz(Tz{jj}(kk,Bz(ii):Dz));%%mean absolute value
+            SSC_TZ(kk,ii)=SSCz(Tz{jj}(kk,Bz(ii):Dz));%%slop change
+            WL_TZ(kk,ii)=WLz(Tz{jj}(kk,Bz(ii):Dz)); %%wavelngth 
             
         end
         ZC{jj}=ZC_TZ;
