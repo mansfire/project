@@ -56,6 +56,8 @@ for ii=1:numberOfFiles
 end
 %% for each posture, try to capture apptox. 50% (0.5) of the data, us whichever channel is "prettiest"
 S=0;
+j=0;
+Start=[];
 Start1=[];
 Stop=[];
 Stop1=[];
@@ -285,34 +287,33 @@ end
 Start{10}=Start10;
 Stop{10}=Stop10;
 
-filename='smoothed.mat';
-save(filename)
+
+%filename='smoothed.mat';
+%save(filename)
 %% new data set
 
-
-for ii=1:numberOfFiles
-    k=1;
-    start=Start{ii};
-    stop=Stop{ii};
-    
-    for jj=1:length(start)%look at each start point
-        
-        for kk=start(jj):stop(jj)%look at the data between start 1 and stop 1, etc.
-            
-            New{ii}(k)=Smoothed_data{ii}(kk);
-            k=k+1;
-        end
-    end
-end
-
+% for ii=1:numberOfFiles
+%     k=1;
+%     start=Start{ii};
+%     stop=Stop{ii};
+%     
+%     for jj=1:length(start)%look at each start point
+%         
+%         for kk=start(jj):stop(jj)%look at the data between start 1 and stop 1, etc.
+%             
+%             New{ii}(k)=Smoothed_data{ii}(kk);
+%             k=k+1;
+%         end
+%     end
+% end
 
 
 %% index on data
 p=[];
 for jj=1:numberOfFiles
     clear p;
-    start=Start{ii};
-    stop=Stop{ii};
+    start=Start{jj};
+    stop=Stop{jj};
     for ii=1:length(Start1)
         p=[p Start1(ii):Stop1(ii)];
     end
