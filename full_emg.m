@@ -17,7 +17,7 @@ for idx = 1:numberOfFiles
     mymodel.data{idx}{6} = zeros(length(mymodel.data{idx}{6}), 1); % channel 6 was bad. Remove.
     mymodel.length{idx} = emgDataStruct.length_sec;
 end
-
+numberofChans= length(mymodel.data{1});%%find how many channels we have
 %% Construct the filters
 lp=480;
 hp=30;
@@ -48,7 +48,7 @@ total_data=[];
 
 for ii=1:numberOfFiles
     total=zeros(1,length(ylp.data{ii}(:,1)));
-    for jj=1:8
+    for jj=1:numberofChans
         for kk=1:length(ylp.data{ii}(:,jj))
             if jj==6
                 total(:,kk)=total(:,kk);
@@ -69,30 +69,30 @@ end
 %% for each posture, try to capture apptox. 50% (0.5) of the data, us whichever channel is "prettiest"
 S=0;
 j=0;
-Start=[];
-Start1=[];
-Stop=[];
-Stop1=[];
-data1=smoothdata(abs(ylp.data{1}(:,2)),'gaussian',300);
-mean1=mean(data1);
-std1=std(data1);
+Start=[];%%all start point
+Start1=[];%%start pints for posture 1
+Stop=[];%%all stop point
+Stop1=[];%%stop points for posture 2
+data1=smoothdata(abs(ylp.data{1}(:,2)),'gaussian',300);%%choose how to look at posture 1
+mean1=mean(data1);%%the average of the above
+std1=std(data1);%%the standard deviation of the above
 for jj=300:length(data1)
-    if (data1(jj)>1.5*mean1+1.5*std1) &&(S==0)
+    if (data1(jj)>1.5*mean1+1.5*std1) &&(S==0)%%if the data hasn't alreayd started, start it when t reaches this point
         S=1;
         j=j+1;
-        Start1=[Start1 jj];
-    elseif (data1(jj)<mean1-1.1*std1) &&(S==1)
+        Start1=[Start1 jj];%%add the start point
+    elseif (data1(jj)<mean1-1.1*std1) &&(S==1)%% is the data hasn't already stopped, stop it when it reaches this point
         S=0;
-        Stop1=[Stop1 jj];
+        Stop1=[Stop1 jj];%%add the stop point
         
     end
     
 end
-if length(Stop1)<length(Start1)
+if length(Stop1)<length(Start1) %if the data finished while being on, stop it
     Stop1=[Stop1 240100];
 end
-Start{1}=Start1;
-Stop{1}=Stop1;
+Start{1}=Start1; %the first element of the Start strcuture
+Stop{1}=Stop1;%% the first element of the stop structure
 S=0;
 j=0;
 
@@ -297,22 +297,22 @@ end
 Start{10}=Start10;
 Stop{10}=Stop10;
 
-filename='smoothed.mat';
+filename='smoothed.mat';%%save smoothed data
 save(filename)
 %% new data set
 
 
 for ii=1:numberOfFiles
     k=1;
-    start=Start{ii};
-    stop=Stop{ii};
+    start=Start{ii};%%choose the start indexes for this posture
+    stop=Stop{ii};%%choose the stp indexes for this posture
     
     for jj=1:length(start)%look at each start point
         
         for kk=start(jj):stop(jj)%look at the data between start 1 and stop 1, etc.
             
-            New{ii}(k)=Smoothed_data{ii}(kk);
-            k=k+1;
+            New{ii}(k)=Smoothed_data{ii}(kk);%%add the point into the new matrix
+            k=k+1;%%increase the index
         end
     end
 end
@@ -321,68 +321,68 @@ end
 
 %% index on data
 
-for jj=1:22
-    clear p;
-    p=[];
+for jj=1:numberOfFiles
+    clear p;%%just to be safe
+    p=[];%matrix of the on semgent
     start=Start{ii};
     stop=Stop{ii};
     for ii=1:length(start)
-        p=[p start(ii):stop(ii)];
+        p=[p start(ii):stop(ii)];%%add in when the muscle is activated
     end
-    P{jj}=p;
+    P{jj}=p;%%add this data to the overall structure
 end
 %% create trimmed data set% this looks at 22 postures (11 X2) and 8 channels and only takes th on aspects of each
 TrimmedTF=[];
- for ii=1:22
-     for jj=1:8
+ for ii=1:numberOfFiles
+     for jj=1:numberofChans
          for kk=1:length(P{ii})
-             Trim(jj,kk)=mymodel.data{ii}{jj}(P{ii}(kk));
+             Trim(jj,kk)=mymodel.data{ii}{jj}(P{ii}(kk));%%trim down each posture for each posture
          end
      end
-     TrimmedTF{ii}=Trim;
+     TrimmedTF{ii}=Trim; %%add the trimmed data to the structure
  end
 
 
 filename='trimmed.mat';
 save(filename)
 %% off data prep
-binsize=0.05*fs;
+binsize=0.05*fs; %create the bins
 
 for kk=1:numberOfFiles
     clear T;
-    for ii=1:8
+    for ii=1:numberofChans
         
         for jj=1:length(TrimmedTF{kk}(:,ii))
-            T(ii,jj)=(TrimmedTF{kk}(jj,ii));
+            T(ii,jj)=(TrimmedTF{kk}(jj,ii)); %%look at the trimmed daa that goes into each posture
             
         end
     end
-    Tz{kk}=T;
+    Tz{kk}=T; %%create the structure for the binned trimmed data
 end
 % extract each of our 4 choosen features, please see respective files
 for jj=1:numberOfFiles
-    nBin=floor(length(Tz{jj})/binsize);
-    Bz=floor(linspace(1,length(Tz{jj}),nBin));
-    Ez=[];
-    ZC_TZ=Ez;
-    SSC_TZ=Ez;
-    MAV_TZ=Ez;
-    WL_TZ=Ez;
-    for kk=1:8
+    nBin=floor(length(Tz{jj})/binsize); %%how many bins so we have 
+    Bz=floor(linspace(1,length(Tz{jj}),nBin)); %%the bins themselves
+    Ez=[];%%an empty matrix for intiallizing the other
+    ZC_TZ=Ez; %%zerocrossings
+    SSC_TZ=Ez;%%slope sign changes
+    MAV_TZ=Ez;%%mean absolute value
+    WL_TZ=Ez;%% wavlength
+    for kk=1:numberofChans
         
         for ii=1:nBin-1
-            Dz=Bz(ii+1);
+            Dz=Bz(ii+1);%%what bin we are in
             
-            ZC_TZ(kk,ii)=ZCz(Tz{jj}(kk,Bz(ii):Dz));%%zero corrsing
-            MAV_TZ(kk,ii)=MAVz(Tz{jj}(kk,Bz(ii):Dz));%%mean absolute value
-            SSC_TZ(kk,ii)=SSCz(Tz{jj}(kk,Bz(ii):Dz));%%slop change
-            WL_TZ(kk,ii)=WLz(Tz{jj}(kk,Bz(ii):Dz)); %%wavelngth 
+            ZC_TZ(kk,ii)=ZCz(Tz{jj}(kk,Bz(ii):Dz));%%find zero corrsing
+            MAV_TZ(kk,ii)=MAVz(Tz{jj}(kk,Bz(ii):Dz));%%find mean absolute value
+            SSC_TZ(kk,ii)=SSCz(Tz{jj}(kk,Bz(ii):Dz));%%find slope sign change
+            WL_TZ(kk,ii)=WLz(Tz{jj}(kk,Bz(ii):Dz)); %%find wavelngth 
             
         end
-        ZC{jj}=ZC_TZ;
-        MAV{jj}=MAV_TZ;
-        SSc{jj}=SSC_TZ;
-        WL{jj}=WL_TZ;
+        ZC{jj}=ZC_TZ;%%add the current ZC feature to the structure
+        MAV{jj}=MAV_TZ;%%add the current MAV feature to the structure
+        SSc{jj}=SSC_TZ;%%add the current SSC feature to the structure
+        WL{jj}=WL_TZ;%%add the current WL feature to the structure
         
     end
     
@@ -393,13 +393,13 @@ for ii=1:numberOfFiles
     clear a
     clear V
     clear D
-    a=[WL{ii};SSc{ii};MAV{ii};ZC{ii}];
-    cord=cord+1;
-    cov_mat{cord}=cov(a');
-    a_mat{ii}=a;
-    [V,D] = eig(cov_mat{ii});
-    eig_vec{ii}=V;
-    eig_val{ii}=D;
+    a=[WL{ii};SSc{ii};MAV{ii};ZC{ii}];%create a matrix of our feature
+    cord=cord+1; %%incriminent the index
+    cov_mat{cord}=cov(a');%%create the covariance natrix
+    a_mat{ii}=a;%%save feature
+    [V,D] = eig(cov_mat{ii})
+    eig_vec{ii}=V;%%eigne vector
+    eig_val{ii}=D;%%eigne vlaues
 end
 eig_val2=eig_val;%just so we don't mess up anything
 for ii=1:numberOfFiles
@@ -407,11 +407,11 @@ for ii=1:numberOfFiles
     eig_cut=10^-6;
     for jj=1:32
         if eig_val2{ii}(jj,jj)>eig_cut
-            eig_highest=eig_val2{ii}(jj,jj);
-            remove=jj;
+            eig_highest=eig_val2{ii}(jj,jj); %%find the palces witht he hhighest eigen values then get their vectores
+            remove=jj;%%incriment 
             kk=kk+1;
-            eig_val2{ii}(remove,remove)=0;
-            eig_new{ii}(kk,:)=eig_val{ii}(remove,remove);
+            eig_val2{ii}(remove,remove)=0;%%so we only get it once
+            eig_new{ii}(kk,:)=eig_val{ii}(remove,remove);%%add thvector in 
         end
         
     end
