@@ -59,17 +59,11 @@ save(filename)
 %% off data prep
 binsize=0.05*fs;
 
+Tz = cell(numberOfFiles, 1);
 for kk=1:numberOfFiles
-    clear T;
-    for ii=1:numberofChans
-        
-        for jj=1:length(TrimmedTF{kk}(:,ii))
-            T(ii,jj)=(TrimmedTF{kk}(jj,ii)); %%look at the trimmed daa that goes into each posture
-            
-        end
-    end
-    Tz{kk}=T; %%create the structure for the binned trimmed data
+    Tz{kk} = TrimmedTF{kk}'; % Feature extraction requires our data to be transposed, so we'll do that here.
 end
+
 % extract each of our 4 choosen features, please see respective files
 for jj=1:numberOfFiles
     nBin=floor(length(Tz{jj})/binsize); %%how many bins so we have 
