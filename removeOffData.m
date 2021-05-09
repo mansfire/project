@@ -5,7 +5,7 @@ function newStruct = removeOffData(inputStructure)
 newStruct = inputStructure;
 
 channelSelection = [4 2 3 5 8 8 1 1 8 1 7 8 8 8 4 4 6 6 1 1 2 4 8 8];
-cutoffSelection = [0.3 -0.2 -0.3 -0.3 0 -0.2 100 100 0.6 0.2 0.2 0.1 0.1 0.1 -0.3 0 -0.4 0 -0.4 -0.4 -0.2 -0.2 -0.2 -0.2];
+cutoffSelection = [0.3 -0.2 -0.3 -0.3 0 -0.2 -100 -100 0.6 0.2 0.2 0.1 0.1 0.1 -0.3 0 -0.4 0 -0.4 -0.4 -0.2 -0.2 -0.2 -0.2];
 
 for i=1:length(newStruct.data)
     [newStruct.onData{i}, newStruct.overlayData{i}] = rmData(newStruct.data{i}, cutoffSelection(i), false, channelSelection(i));

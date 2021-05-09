@@ -54,8 +54,8 @@ end
 mymodel = removeOffData(mymodel);
 TrimmedTF = mymodel.onData;
 
-filename='trimmed.mat';
-save(filename)
+% filename='trimmed.mat';
+% save(filename)
 %% off data prep
 binsize=0.05*fs;
 
@@ -95,9 +95,6 @@ end
 cord=0;
 %% covariance
 for ii=1:numberOfFiles
-    clear a
-    clear V
-    clear D
     a=[WL{ii};SSc{ii};MAV{ii};ZC{ii}];%create a matrix of our feature
     cord=cord+1; %%incriminent the index
     cov_mat{cord}=cov(a');%%create the covariance natrix
