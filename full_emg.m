@@ -35,7 +35,8 @@ for kk=1:numberOfFiles
     fulldata = filtfilt(bp1, data); % No phase shift.
     % Spectrum interpolation to remove 60 hz + harmonic noise. Works in the
     % frequency domain and does not rely on filters. No phase shift.
-    for idx = 1:width(data)
+    [h,w]=size(data);
+    for idx = 1:w
         fulldata(:, idx) = spectrumInterpolation(fulldata(:, idx), fs, 60, 3, 2);
     end
     mymodel.data{kk}=fulldata; % write back to conserve memory.
