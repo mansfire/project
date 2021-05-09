@@ -105,26 +105,17 @@ for ii=1:numberOfFiles
     a_mat{ii}=a;%%save feature
 
 end
+
 for ii=1:numberOfFiles
-    [V,D] = eig(cov_mat{ii});
-    D=diag(D);%%look at the acual values
-    [val,index]=sort(-1*D);
-
-    D=D(index);
-    V=V(:,index);
-    eig_vec{ii}=V;%%eigne vector
-    eig_val{ii}=D;%%eigne vlaues
-    W{ii}=V'*a_mat{ii};
-end
-
-%% can someone start the Euclidean? This one is stumping me
-
-for ii=1:2:numberOfFiles
-        euc=0;
-        min_distance=10^12;
-        for jj=1:length(index)
-        meandist=mean(W{ii}(jj,:));
-        euc=euc+dist(meandist,W{ii+1}(jj,:));
-
-
+    u=mean(a_mat{ii}');
+    bcs=cov(u'*u);%%between class
+    wcs=zeros(32,32);%%lets do within class now
+    for jj=1:32
+        wcs=wcs+cov_mat{jj};
+    end
+    Op=wcs'*bcs;%%optimization matriz
+    W=eig(Op);
+    W=real(W);
+    Y{ii}=W'*a_mat{ii};%%use this to find euclidean
+    
 end
