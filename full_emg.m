@@ -17,7 +17,7 @@ for idx = 1:numberOfFiles
     %mymodel.data{idx}{6} = zeros(length(mymodel.data{idx}{6}), 1); %channel 6 might be bad. Remove?
     mymodel.length{idx} = emgDataStruct.length_sec;
 end
-
+numberofChans= length(mymodel.data{1});%%find how many channels we have
 %% Construct the filters, and run data through them.
 lp=480; % Hz
 hp=30; % Hz
@@ -54,44 +54,46 @@ end
 mymodel = removeOffData(mymodel);
 TrimmedTF = mymodel.onData;
 
+filename='trimmed.mat';
+save(filename)
 %% off data prep
 binsize=0.05*fs;
 
 for kk=1:numberOfFiles
     clear T;
-    for ii=1:8
+    for ii=1:numberofChans
         
         for jj=1:length(TrimmedTF{kk}(:,ii))
-            T(ii,jj)=(TrimmedTF{kk}(jj,ii));
+            T(ii,jj)=(TrimmedTF{kk}(jj,ii)); %%look at the trimmed daa that goes into each posture
             
         end
     end
-    Tz{kk}=T;
+    Tz{kk}=T; %%create the structure for the binned trimmed data
 end
 % extract each of our 4 choosen features, please see respective files
 for jj=1:numberOfFiles
-    nBin=floor(length(Tz{jj})/binsize);
-    Bz=floor(linspace(1,length(Tz{jj}),nBin));
-    Ez=[];
-    ZC_TZ=Ez;
-    SSC_TZ=Ez;
-    MAV_TZ=Ez;
-    WL_TZ=Ez;
-    for kk=1:8
+    nBin=floor(length(Tz{jj})/binsize); %%how many bins so we have 
+    Bz=floor(linspace(1,length(Tz{jj}),nBin)); %%the bins themselves
+    Ez=[];%%an empty matrix for intiallizing the other
+    ZC_TZ=Ez; %%zerocrossings
+    SSC_TZ=Ez;%%slope sign changes
+    MAV_TZ=Ez;%%mean absolute value
+    WL_TZ=Ez;%% wavlength
+    for kk=1:numberofChans
         
         for ii=1:nBin-1
-            Dz=Bz(ii+1);
+            Dz=Bz(ii+1);%%what bin we are in
             
-            ZC_TZ(kk,ii)=ZCz(Tz{jj}(kk,Bz(ii):Dz));
-            MAV_TZ(kk,ii)=MAVz(Tz{jj}(kk,Bz(ii):Dz));
-            SSC_TZ(kk,ii)=SSCz(Tz{jj}(kk,Bz(ii):Dz));
-            WL_TZ(kk,ii)=WLz(Tz{jj}(kk,Bz(ii):Dz));
+            ZC_TZ(kk,ii)=ZCz(Tz{jj}(kk,Bz(ii):Dz));%%find zero corrsing
+            MAV_TZ(kk,ii)=MAVz(Tz{jj}(kk,Bz(ii):Dz));%%find mean absolute value
+            SSC_TZ(kk,ii)=SSCz(Tz{jj}(kk,Bz(ii):Dz));%%find slope sign change
+            WL_TZ(kk,ii)=WLz(Tz{jj}(kk,Bz(ii):Dz)); %%find wavelngth 
             
         end
-        ZC{jj}=ZC_TZ;
-        MAV{jj}=MAV_TZ;
-        SSc{jj}=SSC_TZ;
-        WL{jj}=WL_TZ;
+        ZC{jj}=ZC_TZ;%%add the current ZC feature to the structure
+        MAV{jj}=MAV_TZ;%%add the current MAV feature to the structure
+        SSc{jj}=SSC_TZ;%%add the current SSC feature to the structure
+        WL{jj}=WL_TZ;%%add the current WL feature to the structure
         
     end
     
@@ -102,13 +104,13 @@ for ii=1:numberOfFiles
     clear a
     clear V
     clear D
-    a=[WL{ii};SSc{ii};MAV{ii};ZC{ii}];
-    cord=cord+1;
-    cov_mat{cord}=cov(a');
-    a_mat{ii}=a;
-    [V,D] = eig(cov_mat{ii});
-    eig_vec{ii}=V;
-    eig_val{ii}=D;
+    a=[WL{ii};SSc{ii};MAV{ii};ZC{ii}];%create a matrix of our feature
+    cord=cord+1; %%incriminent the index
+    cov_mat{cord}=cov(a');%%create the covariance natrix
+    a_mat{ii}=a;%%save feature
+    [V,D] = eig(cov_mat{ii})
+    eig_vec{ii}=V;%%eigne vector
+    eig_val{ii}=D;%%eigne vlaues
 end
 eig_val2=eig_val;%just so we don't mess up anything
 for ii=1:numberOfFiles
@@ -116,11 +118,11 @@ for ii=1:numberOfFiles
     eig_cut=10^-6;
     for jj=1:32
         if eig_val2{ii}(jj,jj)>eig_cut
-            eig_highest=eig_val2{ii}(jj,jj);
-            remove=jj;
+            eig_highest=eig_val2{ii}(jj,jj); %%find the palces witht he hhighest eigen values then get their vectores
+            remove=jj;%%incriment 
             kk=kk+1;
-            eig_val2{ii}(remove,remove)=0;
-            eig_new{ii}(kk,:)=eig_val{ii}(remove,remove);
+            eig_val2{ii}(remove,remove)=0;%%so we only get it once
+            eig_new{ii}(kk,:)=eig_val{ii}(remove,remove);%%add thvector in 
         end
         
     end
