@@ -109,7 +109,7 @@ for ii=1:numberOfFiles
     [V,D] = eig(cov_mat{ii});
     D=diag(D);%%look at the acual values
     [val,index]=sort(-1*D);
-    index=index(1:3);%%only keep the best
+
     D=D(index);
     V=V(:,index);
     eig_vec{ii}=V;%%eigne vector
@@ -119,3 +119,12 @@ end
 
 %% can someone start the Euclidean? This one is stumping me
 
+for ii=1:2:numberOfFiles
+        euc=0;
+        min_distance=10^12;
+        for jj=1:length(index)
+        meandist=mean(W{ii}(jj,:));
+        euc=euc+dist(meandist,W{ii+1}(jj,:));
+
+
+end
