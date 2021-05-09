@@ -98,28 +98,23 @@ cord=0;
 for ii=1:numberOfFiles
     a=[WL{ii};SSc{ii};MAV{ii};ZC{ii}];%create a matrix of our feature
     cord=cord+1; %%incriminent the index
-    cov_mat{cord}=cov(a');%%create the covariance natrix
+    [M,N]=size(a);
+    mn=mean(a,2);
+    a=a-repmat(mn,1,N);
+    cov_mat{cord}=cov(a*a');%%create the covariance natrix
     a_mat{ii}=a;%%save feature
-    [V,D] = eig(cov_mat{ii})
+
+end
+for ii=1:numberOfFiles
+    [V,D] = eig(cov_mat{ii});
+    D=diag(D);%%look at the acual values
+    [val,index]=sort(-1*D);
+    index=index(1:3);%%only keep the best
+    D=D(index);
+    V=V(:,index);
     eig_vec{ii}=V;%%eigne vector
     eig_val{ii}=D;%%eigne vlaues
-end
-eig_val2=eig_val;%just so we don't mess up anything
-for ii=1:numberOfFiles
-    kk=0;
-    eig_cut=10^-6;
-    for jj=1:32
-        if eig_val2{ii}(jj,jj)>eig_cut
-            eig_highest=eig_val2{ii}(jj,jj); %%find the palces witht he hhighest eigen values then get their vectores
-            remove=jj;%%incriment 
-            kk=kk+1;
-            eig_val2{ii}(remove,remove)=0;%%so we only get it once
-            eig_new{ii}(kk,:)=eig_val{ii}(remove,remove);%%add thvector in 
-        end
-        
-    end
-    
-    
+    W{ii}=V'*a_mat{ii};
 end
 
 %% can someone start the Euclidean? This one is stumping me
