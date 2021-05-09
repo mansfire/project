@@ -116,16 +116,13 @@ for ii=1:numberOfFiles
     eig_vec{ii}=V;%%eigne vector
 end
 
-for ii=1:numberOfFiles
-    u=mean(a_mat{ii}');
-    bcs=cov(u'*u);%%between class
-    wcs=zeros(32,32);%%lets do within class now
-    for jj=1:32
-        wcs=wcs+cov_mat{jj};
-    end
-    Op=wcs'*bcs;%%optimization matriz
-    W=eig(Op);
-    W=real(W);
-    Y{ii}=W'*a_mat{ii};%%use this to find euclidean
-    
+for ii=1:2:numberOfFiles
+        euc=0;
+        min_distance=10^12;
+        for jj=1:length(index)
+        meandist=mean(W{ii}(jj,:));
+        euc=euc+dist(meandist,W{ii+1}(jj,:));
+
+
+end
 end
