@@ -114,8 +114,18 @@ for ii=1:numberOfFiles
         wcs=wcs+cov_mat{jj};
     end
     Op=wcs'*bcs;%%optimization matriz
-    W=eig(Op);
+    [Z,W]=eig(Op);
     W=real(W);
+ 
+
+    W=diag(W);%%look at the acual values
+    [val,index]=sort(-1*W);
+
+
+    W=W(index);
+    Z=Z(:,index);
+    eig_vec{ii}=Z;%%eigne vector
+
     Y{ii}=W'*a_mat{ii};%%use this to find euclidean
     
 end
