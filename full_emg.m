@@ -105,6 +105,16 @@ for ii=1:numberOfFiles
     a_mat{ii}=a;%%save feature
 
 end
+for ii=1:numberOfFiles
+    [V,D] = eig(cov_mat{ii});
+    D=diag(D);%%look at the acual values
+    [val,index]=sort(-1*D);
+    index=index(1:3);%%only keep the best
+
+    D=D(index);
+    V=V(:,index);
+    eig_vec{ii}=V;%%eigne vector
+end
 
 for ii=1:numberOfFiles
     u=mean(a_mat{ii}');
