@@ -110,9 +110,10 @@ for ii=1:numberOfFiles
     u=mean(a_mat{ii}');
     bcs=cov(u'*u);%%between class
     wcs=zeros(32,32);%%lets do within class now
-    for jj=1:32
+    for jj=1:numberOfFiles
         wcs=wcs+cov_mat{jj};
     end
+    wcs=wcs/(numberOfFiles-1);
     Op=wcs'*bcs;%%optimization matriz
     [Z,W]=eig(Op);
     W=real(W);
