@@ -105,24 +105,28 @@ for ii=1:numberOfFiles
     a_mat{ii}=a;%%save feature
 
 end
+
 for ii=1:numberOfFiles
-    [V,D] = eig(cov_mat{ii});
-    D=diag(D);%%look at the acual values
-    [val,index]=sort(-1*D);
-    index=index(1:3);%%only keep the best
 
-    D=D(index);
-    V=V(:,index);
-    eig_vec{ii}=V;%%eigne vector
+    u=mean(a_mat{ii}');
+    bcs=cov(u'*u);%%between class
+    wcs=zeros(32,32);%%lets do within class now
+    for jj=1:numberOfFiles
+        wcs=wcs+cov_mat{jj};
+    end
+    wcs=wcs/(numberOfFiles-1);
+    Op=wcs'*bcs;%%optimization matriz
+    [Z,W]=eig(Op);
+    W=real(W);
+ 
+    W=diag(W);%%look at the acual values
+    [val,index]=sort(-1*W);
+
+    W=W(index);
+    Z=Z(:,index);
+    eig_vec{ii}=Z;%%eigne vector
+
+    Y{ii}=W'*a_mat{ii};%%use this to find euclidean
+    
 end
 
-for ii=1:2:numberOfFiles
-        euc=0;
-        min_distance=10^12;
-        for jj=1:length(index)
-        meandist=mean(W{ii}(jj,:));
-        euc=euc+dist(meandist,W{ii+1}(jj,:));
-
-
-end
-end
