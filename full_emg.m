@@ -107,6 +107,7 @@ for ii=1:numberOfFiles
 end
 
 for ii=1:numberOfFiles
+
     u=mean(a_mat{ii}');
     bcs=cov(u'*u);%%between class
     wcs=zeros(32,32);%%lets do within class now
@@ -118,10 +119,8 @@ for ii=1:numberOfFiles
     [Z,W]=eig(Op);
     W=real(W);
  
-
     W=diag(W);%%look at the acual values
     [val,index]=sort(-1*W);
-
 
     W=W(index);
     Z=Z(:,index);
@@ -130,3 +129,4 @@ for ii=1:numberOfFiles
     Y{ii}=W'*a_mat{ii};%%use this to find euclidean
     
 end
+
