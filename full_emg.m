@@ -49,9 +49,9 @@ save('filteredData.mat','mymodel','numberOfFiles','numberOfChans','fs','dt')
 %% add all the channels for each of the 12 test and validation postures
 % Not used? Artifact of deleted code??
 
-for ii=1:numberOfFiles
-    total_data{idx}=sum(abs(mymodel.data{idx}), 2); % Rectifies the data, then adds all channels together.
-end
+% for ii=1:numberOfFiles
+%     total_data{idx}=sum(abs(mymodel.data{idx}), 2); % Rectifies the data, then adds all channels together.
+% end
 
 
 %% This section of code removes the off data and places the "on" data into the onData member within the mymodel structure.
@@ -64,6 +64,7 @@ save('trimmedData.mat','mymodel','TrimmedTF','numberOfFiles','numberOfChans','fs
 
 
 %% off data prep
+clear all
 load('trimmedData.mat')
 
 
@@ -100,9 +101,9 @@ for jj=1:numberOfFiles
     SSC{jj}=SSC_TZ;%%add the current SSC feature to the structure
     WL{jj}=WL_TZ;%%add the current WL feature to the structure
 end
-cord=0;
 
-%% Data separation
+
+%Data separation
 trainingIndex = 1:2:24;
 validationIndex = 2:2:24;
 
@@ -126,8 +127,9 @@ WL_val = WL(1, validationIndex);
 
 numberOfPoses = numberOfFiles / 2;
 
-%% covariance
+% LDA
 % TODO: covariance only on training data (todo)
+cord=0;
 for ii=1:numberOfPoses
     a=[WL_train{ii};SSC_train{ii};MAV_train{ii};ZC_train{ii}];%create a matrix of our feature
     cord=cord+1; %%increment the index
@@ -141,7 +143,9 @@ end
 
 for ii=1:numberOfPoses
 % TODO: W matrix only on training data (todo)
+%     a_mat{ii} = abs(a_mat{ii});
     u=mean(a_mat{ii}');
+    class_means{ii} = mean(a_mat{ii},2);
     bcs=cov(u'*u);%%between class
     wcs=zeros(32,32);%%lets do within class now
     for jj=1:numberOfPoses
@@ -151,20 +155,62 @@ for ii=1:numberOfPoses
     Op=wcs'*bcs;%%optimization matrix
     [Z,W]=eig(Op);
     W=real(W);
+    Z=real(Z);
  
-    W=diag(W);%%look at the acual values
-    [val,indexT]=sort(-1*W);
+    Wact=diag(W);%%look at the acual values
+    [val,indexT]=sort(-1*Wact);
 
-    W=W(indexT);
+    Windex=Wact(indexT);
     Z=Z(:,indexT);
     eig_vec{ii}=Z;%%eigen vector
 
-    Y{ii}=W'*a_mat{ii};%%use this to find euclidean
-    
+    Y{ii}=Z'*a_mat{ii};%%use this to find euclidean
+    Y_avg{ii} = mean(Y{ii},2);
+end
+% TODO: swap Z & W
+%% Euclidean Distance
+for p = 1:numberOfPoses
+    a=[WL_val{p};SSC_val{p};MAV_val{p};ZC_val{p}];
+    for k = 1:length(a)
+        yVec(:,k) = Z' * a(:,k); % all features transformed for single bin
+    end
+    % yVec: every transformed for pose p
+    Yval{p} = yVec;
+    % Yval: transformed data for every pose
 end
 
-%% Euclidean Distance
 
+% for i = 1:numberOfPoses     % over number of poses (12)
+%     for j = 1:length(Yval{ii})  % over number of bins
+%         for k = 1:32        % over number of features (32)
+%             terms(k) = (Yval{i}(k,i) - Y_avg{i}(k))^2;
+%         end
+%         dist(i,j) = sqrt(sum(terms));   % make matrix where horiz vectors of are distance values
+%                                         % each row is distance values for
+%                                         % pose of that index
+%     end
+%     distStruct{i} = dist;
+% end
+% sqrt()
 
+for m = 1:numberOfPoses         % val poses
+    for n = 1:numberOfPoses     % train poses
+        numBins = length(Yval{n});
+        for i = 1:numBins
+            for j = 1:32
+                yVal_i = Yval{m}(j,i);
+                yTrain_i = Y_avg{n}(j);
+%                 sqTerms(j) = (Yval{m}(j,i) - Y_avg{n}(j,i))^2;
+                sqTerms(j) = (yVal_i - yTrain_i)^2;
+            end
+        end
+        dist(n,i) = sqrt(sum(sqTerms));
+        
+    end
+    distStruct{m} = dist;
+end
+    
+    
 
 %% Classification
+
