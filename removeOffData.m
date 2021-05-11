@@ -50,7 +50,7 @@ else
     % Create a logical array with the same length as the data, then use it as
     % a mask for the rest of the data.
     
-    channelData = smoothData(:,channelToUse);
+    channelData=smoothdata(abs(inputData(:,channelToUse)),'sgolay',round(length(inputData) / 100));
     channelData(channelData<=calculatedThreshold(channelToUse)) = 0;
     channelData(channelData>calculatedThreshold(channelToUse)) = 1;
     maskArray = logical(channelData);
@@ -69,12 +69,17 @@ else
         scrubbedData(:,i) = chanData(maskArray);
         overlayData(:,i) = chanData .* channelData;
     end
-    % Uncomment this section if you want to verify that the "on data" looks
-    % right. This will create a lot of plots!!! Be warned.
-    %     plot(inputData(:,1))
-    %     hold on;
-    %     plot(overlayData(:,1));
-    %     hold off;
+    %     Uncomment this section if you want to verify that the "on data" looks
+    %     right. This will create a lot of plots!!! Be warned.
+    figure;
+    for i=1:width(inputData)
+        nexttile;
+        plot(inputData(:,i))
+        hold on;
+        plot(overlayData(:,i));
+        hold off;
+        title(num2str(i))
+    end
 end
 
 end
