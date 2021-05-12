@@ -2,6 +2,7 @@
 clear;
 close all;
 
+%% Load all data files and place into struct
 fdsGroup4 = fileDatastore(fullfile('LDACLASSIFYG4'), 'PreviewFcn', @load, 'ReadFcn', @load, 'IncludeSubfolders', false, 'FileExtensions', '.mat');
 previewData = preview(fdsGroup4); % Peeks into the first file in the data directory
 fs=previewData.samplingRate ;%sampling rate
@@ -73,10 +74,11 @@ TrimmedTF = mymodel.onData;
 %save('trimmedData.mat','mymodel','TrimmedTF','numberOfFiles','numberOfChans','fs','dt')
 
 
-%% off data prep
+%% Extract features for training and validation data
+
+%shortcut code to skip configuring and filtering data
 %clear all
 %load('trimmedData.mat')
-
 
 binsize=0.05*fs;
 
@@ -113,7 +115,7 @@ for jj=1:numberOfFiles
 end
 
 
-%Data separation
+%% Data separation
 trainingIndex = 1:2:24;
 validationIndex = 2:2:24;
 
@@ -138,6 +140,7 @@ WL_val = WL(1, validationIndex);
 numberOfPoses = numberOfFiles / 2;
 
 
+%% LDA process
 % Create the class mean matrix, and the associated between class separation
 % matrix.
 classMeansMatrix = zeros(32, numberOfPoses);
@@ -201,23 +204,16 @@ end
 for m = 1:numberOfPoses         % val poses
     for n = 1:numberOfPoses     % train poses
         numBins = length(Yval{n});
-        clear dist sqTerms
-        
+        clear dist sqTerms        
         for i = 1:numBins
-            
             for j = 1:32
                 yVal_i = Yval{1,m}(j,i);
                 yTrain_i = Y_avg{1,n}(j);
-%                 yTrainCapture{n}(
-%                 sqTerms(j) = (Yval{m}(j,i) - Y_avg{n}(j,i))^2;
                 sqTerms(j) = (yVal_i - yTrain_i)^2;
-            end
-            
+            end            
             dist(i) = sqrt(sum(sqTerms));
-        end
-        
+        end        
         distByTrainPose(n,:) = dist;
-
     end
     distStruct{m} = distByTrainPose; 
 end
