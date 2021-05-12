@@ -1,3 +1,6 @@
+% Feature extraction function
+% Calculates number of zero crossings for given vector of data
+
 function ZC_out=ZCz(x)
 e=1*10^-5;
 if x(1)==0
