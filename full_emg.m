@@ -2,6 +2,7 @@
 clear;
 close all;
 
+%% Load all data files and place into struct
 fdsGroup4 = fileDatastore(fullfile('LDACLASSIFYG4'), 'PreviewFcn', @load, 'ReadFcn', @load, 'IncludeSubfolders', false, 'FileExtensions', '.mat');
 previewData = preview(fdsGroup4); % Peeks into the first file in the data directory
 fs=previewData.samplingRate ;%sampling rate
@@ -73,10 +74,11 @@ TrimmedTF = mymodel.onData;
 %save('trimmedData.mat','mymodel','TrimmedTF','numberOfFiles','numberOfChans','fs','dt')
 
 
-%% off data prep
+%% Extract features for training and validation data
+
+%shortcut code to skip configuring and filtering data
 %clear all
 %load('trimmedData.mat')
-
 
 binsize=0.05*fs;
 
@@ -113,7 +115,7 @@ for jj=1:numberOfFiles
 end
 
 
-%Data separation
+%% Data separation
 trainingIndex = 1:2:24;
 validationIndex = 2:2:24;
 
@@ -138,6 +140,7 @@ WL_val = WL(1, validationIndex);
 numberOfPoses = numberOfFiles / 2;
 
 
+%% LDA process
 % Create the class mean matrix, and the associated between class separation
 % matrix.
 classMeansMatrix = zeros(32, numberOfPoses);
@@ -175,28 +178,22 @@ optMatrix = withinClassMatrix \ betweenClassMatrix; % This is equivalent to inv(
 Zsorted = Z(ind, ind);
 Wsorted = W(:, ind);
 
-% Now we can remove eigenvalues and the eigenvectors that are very small
-% (<1e-6)
-%Wsorted = Wsorted(:, 1:10); % After the 10th eigenvalue, these vectors get really small.
-
-
 % Now that we have our matrix, we can go ahead and transform the validation
 % data into our newly defined space, and we also need to transform the
 % class mean vectors.
 %% Euclidean Distance
 transformedClassMeanMatrix = real(Wsorted)' * classMeansMatrix;
-
-
 for i=1:numberOfPoses
     a=[WL_val{i};SSC_val{i};MAV_val{i};ZC_val{i}];
     Yval{i} = real(Wsorted)' * a;
     Y_avg{i} = transformedClassMeanMatrix(:,i);
 end
 
-% Setup a voting system, where each transformed vector in Yval will "vote"
-% on which class it is closest to. The class with the highest number of
-% points wins and it shall be classified as that one.
-
+% calculate euclidean distance from each point in validation data to class
+% average values for each training class
+% result is structure with 12 cells of 12xnumBin matrices
+% each cell corresponds to one validation data pose
+% each row in the cells represents distance to a training data pose
 for i=1:numberOfPoses % validation
     for j=1:numberOfPoses % training
         res = Yval{i} - Y_avg{j};
@@ -204,35 +201,6 @@ for i=1:numberOfPoses % validation
     end
     distVectors{i} = distances;
 end
-
-% % calculate euclidean distance from each point in validation data to class
-% % average values for each training class
-% % result is structure with 12 cells of 12xnumBin matrices
-% % each cell corresponds to one validation data pose
-% % each row in the cells represents distance to a training data pose
-% for m = 1:numberOfPoses         % val poses
-%     for n = 1:numberOfPoses     % train poses
-%         numBins = length(Yval{n});
-%         clear dist sqTerms
-%         
-%         for i = 1:numBins
-%             
-%             for j = 1:32
-%                 yVal_i = Yval{1,m}(j,i);
-%                 yTrain_i = Y_avg{1,n}(j);
-% %                 yTrainCapture{n}(
-% %                 sqTerms(j) = (Yval{m}(j,i) - Y_avg{n}(j,i))^2;
-%                 sqTerms(j) = (yVal_i - yTrain_i)^2;
-%             end
-%             
-%             dist(i) = sqrt(sum(sqTerms));
-%         end
-%         
-%         distByTrainPose(n,:) = dist;
-% 
-%     end
-%     distStruct{m} = distByTrainPose; 
-% end
 
 %% Classification
 
