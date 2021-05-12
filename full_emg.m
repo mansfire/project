@@ -206,12 +206,14 @@ end
 for m = 1:numberOfPoses         % val poses
     for n = 1:numberOfPoses     % train poses
         numBins = length(Yval{n});
+        clear dist sqTerms
         
         for i = 1:numBins
             
             for j = 1:32
-                yVal_i = Yval{m}(j,i);
-                yTrain_i = Y_avg{n}(j);
+                yVal_i = Yval{1,m}(j,i);
+                yTrain_i = Y_avg{1,n}(j);
+
 %                 sqTerms(j) = (Yval{m}(j,i) - Y_avg{n}(j,i))^2;
                 sqTerms(j) = (yVal_i - yTrain_i)^2;
             end
