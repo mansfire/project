@@ -193,34 +193,46 @@ for i=1:numberOfPoses
     Y_avg{i} = transformedClassMeanMatrix(:,i);
 end
 
-% calculate euclidean distance from each point in validation data to class
-% average values for each training class
-% result is structure with 12 cells of 12xnumBin matrices
-% each cell corresponds to one validation data pose
-% each row in the cells represents distance to a training data pose
-for m = 1:numberOfPoses         % val poses
-    for n = 1:numberOfPoses     % train poses
-        numBins = length(Yval{n});
-        clear dist sqTerms
-        
-        for i = 1:numBins
-            
-            for j = 1:32
-                yVal_i = Yval{1,m}(j,i);
-                yTrain_i = Y_avg{1,n}(j);
-%                 yTrainCapture{n}(
-%                 sqTerms(j) = (Yval{m}(j,i) - Y_avg{n}(j,i))^2;
-                sqTerms(j) = (yVal_i - yTrain_i)^2;
-            end
-            
-            dist(i) = sqrt(sum(sqTerms));
-        end
-        
-        distByTrainPose(n,:) = dist;
+% Setup a voting system, where each transformed vector in Yval will "vote"
+% on which class it is closest to. The class with the highest number of
+% points wins and it shall be classified as that one.
 
+for i=1:numberOfPoses % validation
+    for j=1:numberOfPoses % training
+        res = Yval{i} - Y_avg{j};
+        distances(j) = mean(vecnorm(res));
     end
-    distStruct{m} = distByTrainPose; 
+    distVectors{i} = distances;
 end
+
+% % calculate euclidean distance from each point in validation data to class
+% % average values for each training class
+% % result is structure with 12 cells of 12xnumBin matrices
+% % each cell corresponds to one validation data pose
+% % each row in the cells represents distance to a training data pose
+% for m = 1:numberOfPoses         % val poses
+%     for n = 1:numberOfPoses     % train poses
+%         numBins = length(Yval{n});
+%         clear dist sqTerms
+%         
+%         for i = 1:numBins
+%             
+%             for j = 1:32
+%                 yVal_i = Yval{1,m}(j,i);
+%                 yTrain_i = Y_avg{1,n}(j);
+% %                 yTrainCapture{n}(
+% %                 sqTerms(j) = (Yval{m}(j,i) - Y_avg{n}(j,i))^2;
+%                 sqTerms(j) = (yVal_i - yTrain_i)^2;
+%             end
+%             
+%             dist(i) = sqrt(sum(sqTerms));
+%         end
+%         
+%         distByTrainPose(n,:) = dist;
+% 
+%     end
+%     distStruct{m} = distByTrainPose; 
+% end
 
 %% Classification
 
@@ -229,7 +241,7 @@ classNames = ['Grasping' 'Hand Close' 'Hand Open' 'Off' 'Thumb Abduction'...
     'Wrist Rad Dev' 'Wrist Supination' 'Wrist Ulnar Dev'];
 
 for i = 1:numberOfPoses
-   valPose = distStruct{i};
+   valPose = distVectors{i};
 
    [minDist,index] = min(valPose);
    
@@ -241,7 +253,7 @@ for i = 1:numberOfPoses
    classes.gc{i} = gc;
    classes.grps{i} = grps;
    
-   topClass = grps{1};
+   topClass = grps;
    
    outputClass(i) = topClass;
 end
