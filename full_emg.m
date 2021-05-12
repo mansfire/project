@@ -153,8 +153,8 @@ end
 
 for ii=1:numberOfPoses
 % TODO: W matrix only on training data (todo)
-%     a_mat{ii} = abs(a_mat{ii});
-    u=mean(a_mat{ii}');
+    a_t=(a_mat{ii}');
+    u=mean(a_t);
     class_means{ii} = mean(a_mat{ii},2);
     bcs=cov(u'*u);%%between class
     wcs=zeros(32,32);%%lets do within class now
