@@ -66,7 +66,6 @@ for i=1:numberOfFiles
 end
 
 for i=1:numberOfFiles
-    figure;
     tempDat = mymodel.onData{i};
     tempDat = tempDat(1:shortestPose, :);
     mymodel.onData{i} = tempDat;
