@@ -53,6 +53,29 @@ end
 % There is also a member called "overlayData" that one can use to make nice
 % plots to verify that the onData seems correct.
 mymodel = removeOffData(mymodel);
+
+% We need to make the datasets all the same length now.
+% Determine the shortest onData length, then just shorten all the other
+% datasets to match it.
+
+shortestPose = length(mymodel.onData{1});
+for i=1:numberOfFiles
+    if(shortestPose > length(mymodel.onData{i}))
+        shortestPose = length(mymodel.onData{i});
+    end
+end
+
+for i=1:numberOfFiles
+    figure;
+    nexttile;
+    tempDat = mymodel.onData{i};
+    plot(tempDat(:,1));
+    tempDat = tempDat(1:shortestPose, :);
+    mymodel.onData{i} = tempDat;
+    nexttile;
+    plot(tempDat(:,1));
+end
+
 TrimmedTF = mymodel.onData;
 
 % filename='trimmed.mat';

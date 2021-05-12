@@ -71,15 +71,15 @@ else
     end
     %     Uncomment this section if you want to verify that the "on data" looks
     %     right. This will create a lot of plots!!! Be warned.
-    figure;
-    for i=1:width(inputData)
-        nexttile;
-        plot(inputData(:,i))
-        hold on;
-        plot(overlayData(:,i));
-        hold off;
-        title(num2str(i))
-    end
+%     figure;
+%     for i=1:width(inputData)
+%         nexttile;
+%         plot(inputData(:,i))
+%         hold on;
+%         plot(overlayData(:,i));
+%         hold off;
+%         title(num2str(i))
+%     end
 end
 
 end
