@@ -67,13 +67,9 @@ end
 
 for i=1:numberOfFiles
     figure;
-    nexttile;
     tempDat = mymodel.onData{i};
-    plot(tempDat(:,1));
     tempDat = tempDat(1:shortestPose, :);
     mymodel.onData{i} = tempDat;
-    nexttile;
-    plot(tempDat(:,1));
 end
 
 TrimmedTF = mymodel.onData;
