@@ -183,30 +183,15 @@ Wsorted = W(:, ind);
 % Now that we have our matrix, we can go ahead and transform the validation
 % data into our newly defined space, and we also need to transform the
 % class mean vectors.
+%% Euclidean Distance
+transformedClassMeanMatrix = real(Wsorted)' * classMeansMatrix;
 
-transformedClassMeanMatrix = Wsorted' * classMeansMatrix;
 
 for i=1:numberOfPoses
     a=[WL_val{i};SSC_val{i};MAV_val{i};ZC_val{i}];
-    Yval{i} = Wsorted' * a;
+    Yval{i} = real(Wsorted)' * a;
+    Y_avg{i} = transformedClassMeanMatrix(:,i);
 end
-
-x = 3
-
-%% Euclidean Distance
-
-% create matrix of features of validation data
-% transform matrix into calculation subspace
-for p = 1:numberOfPoses
-    a=[WL_val{p};SSC_val{p};MAV_val{p};ZC_val{p}];
-    for k = 1:length(a)
-        yVec(:,k) = W' * a(:,k); % all features transformed for single bin
-    end
-    % yVec: every transformed for pose p
-    Yval{p} = yVec;
-    % Yval: transformed data for every pose
-end
-
 
 % calculate euclidean distance from each point in validation data to class
 % average values for each training class
