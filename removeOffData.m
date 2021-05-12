@@ -50,7 +50,7 @@ else
     % Create a logical array with the same length as the data, then use it as
     % a mask for the rest of the data.
     
-    channelData = smoothData(:,channelToUse);
+    channelData=smoothdata(abs(inputData(:, channelToUse)),'sgolay',round(length(inputData) / 100));
     channelData(channelData<=calculatedThreshold(channelToUse)) = 0;
     channelData(channelData>calculatedThreshold(channelToUse)) = 1;
     maskArray = logical(channelData);

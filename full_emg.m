@@ -58,8 +58,24 @@ save('filteredData.mat','mymodel','numberOfFiles','numberOfChans','fs','dt')
 % There is also a member called "overlayData" that one can use to make nice
 % plots to verify that the onData seems correct.
 mymodel = removeOffData(mymodel);
-TrimmedTF = mymodel.onData;
+% We need to make the datasets all the same length now.
+% Determine the shortest onData length, then just shorten all the other
+% datasets to match it.
 
+shortestPose = length(mymodel.onData{1});
+for i=1:numberOfFiles
+    if(shortestPose > length(mymodel.onData{i}))
+        shortestPose = length(mymodel.onData{i});
+    end
+end
+
+for i=1:numberOfFiles
+    tempDat = mymodel.onData{i};
+    tempDat = tempDat(1:shortestPose, :);
+    mymodel.onData{i} = tempDat;
+end
+
+TrimmedTF = mymodel.onData;
 save('trimmedData.mat','mymodel','TrimmedTF','numberOfFiles','numberOfChans','fs','dt')
 
 
@@ -209,8 +225,5 @@ for m = 1:numberOfPoses         % val poses
     end
     distStruct{m} = dist;
 end
-    
-    
-
 %% Classification
 
