@@ -192,7 +192,11 @@ for i=1:numberOfPoses
 end
 
 x = 3
+
 %% Euclidean Distance
+
+% create matrix of features of validation data
+% transform matrix into calculation subspace
 for p = 1:numberOfPoses
     a=[WL_val{p};SSC_val{p};MAV_val{p};ZC_val{p}];
     for k = 1:length(a)
@@ -204,19 +208,11 @@ for p = 1:numberOfPoses
 end
 
 
-% for i = 1:numberOfPoses     % over number of poses (12)
-%     for j = 1:length(Yval{ii})  % over number of bins
-%         for k = 1:32        % over number of features (32)
-%             terms(k) = (Yval{i}(k,i) - Y_avg{i}(k))^2;
-%         end
-%         dist(i,j) = sqrt(sum(terms));   % make matrix where horiz vectors of are distance values
-%                                         % each row is distance values for
-%                                         % pose of that index
-%     end
-%     distStruct{i} = dist;
-% end
-% sqrt()
-
+% calculate euclidean distance from each point in validation data to class
+% average values for each training class
+% result is structure with 12 cells of 12xnumBin matrices
+% each cell corresponds to one validation data pose
+% each row in the cells represents distance to a training data pose
 for m = 1:numberOfPoses         % val poses
     for n = 1:numberOfPoses     % train poses
         numBins = length(Yval{n});
@@ -227,7 +223,7 @@ for m = 1:numberOfPoses         % val poses
             for j = 1:32
                 yVal_i = Yval{1,m}(j,i);
                 yTrain_i = Y_avg{1,n}(j);
-
+%                 yTrainCapture{n}(
 %                 sqTerms(j) = (Yval{m}(j,i) - Y_avg{n}(j,i))^2;
                 sqTerms(j) = (yVal_i - yTrain_i)^2;
             end
@@ -240,5 +236,33 @@ for m = 1:numberOfPoses         % val poses
     end
     distStruct{m} = distByTrainPose; 
 end
+
 %% Classification
 
+classNames = ['Grasping' 'Hand Close' 'Hand Open' 'Off' 'Thumb Abduction'...
+    'Thumb Adduction' 'Wrist Extension' 'Wrist Flexion' 'Wrist Pronation'...
+    'Wrist Rad Dev' 'Wrist Supination' 'Wrist Ulnar Dev'];
+
+for i = 1:numberOfPoses
+   valPose = distStruct{i};
+
+   [minDist,index] = min(valPose);
+   
+   classes.minDist{i} = minDist;
+   classes.index{i} = index;
+   
+   [gc,grps] = groupcounts(index);
+   
+   classes.gc{i} = gc;
+   classes.grps{i} = grps;
+   
+   topClass = grps{1};
+   
+   outputClass(i) = topClass;
+end
+outputCats = categorical(outputClass);
+
+trueClass = [1:12];
+trueCats = categorical(trueClass);
+
+plotconfusion(trueCats,outputCats)
