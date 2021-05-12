@@ -45,7 +45,7 @@ for kk=1:numberOfFiles
     mymodel.meanChan{kk} = mean(fulldata,2);
 end
 
-save('filteredData.mat','mymodel','numberOfFiles','numberOfChans','fs','dt')
+%save('filteredData.mat','mymodel','numberOfFiles','numberOfChans','fs','dt')
 
 
 %% This section of code removes the off data and places the "on" data into the onData member within the mymodel structure.
@@ -70,12 +70,12 @@ for i=1:numberOfFiles
 end
 
 TrimmedTF = mymodel.onData;
-save('trimmedData.mat','mymodel','TrimmedTF','numberOfFiles','numberOfChans','fs','dt')
+%save('trimmedData.mat','mymodel','TrimmedTF','numberOfFiles','numberOfChans','fs','dt')
 
 
 %% off data prep
-clear all
-load('trimmedData.mat')
+%clear all
+%load('trimmedData.mat')
 
 
 binsize=0.05*fs;
@@ -137,52 +137,66 @@ WL_val = WL(1, validationIndex);
 
 numberOfPoses = numberOfFiles / 2;
 
-% LDA
-% TODO: covariance only on training data (todo)
-cord=0;
-for ii=1:numberOfPoses
-    a=[WL_train{ii};SSC_train{ii};MAV_train{ii};ZC_train{ii}];%create a matrix of our feature
-    cord=cord+1; %%increment the index
-    [M,N]=size(a);
-    mn=mean(a,2);
-    a=a-repmat(mn,1,N);
-    cov_mat{cord}=cov(a*a');%%create the covariance natrix
-    a_mat{ii}=a;%%save feature
 
+% Create the class mean matrix, and the associated between class separation
+% matrix.
+classMeansMatrix = zeros(32, numberOfPoses);
+for i=1:numberOfPoses
+    featureMatrix =[WL_train{i};SSC_train{i};MAV_train{i};ZC_train{i}];%create a matrix of our feature
+    % For each posture set, we will determine the average value of each
+    % feature extracted across the number of sample bins.
+    classMeansMatrix(:,i) = mean(featureMatrix,2)';
+end
+betweenClassMatrix = cov(classMeansMatrix'); % again, we need to take the transpose to get the proper 32x32 matrix out from the covariance calculation.
+
+allClassMeanVector = mean(classMeansMatrix); % This is just the mean of all class vectors. Don't really need this, but it's nice to have just in case.
+
+% Create the within class scatter matrix, which is just the average of each
+% output classes' covariance matrices.
+
+withinClassMatrix = zeros(32,32);
+for i=1:numberOfPoses
+    featureMatrix =[WL_train{i};SSC_train{i};MAV_train{i};ZC_train{i}];%create a matrix of our feature
+    featureMatrix = featureMatrix'; % Transpose it to properly compute the covariance matrix for this class.
+    withinClassMatrix =  withinClassMatrix + cov(featureMatrix);
 end
 
-for ii=1:numberOfPoses
-% TODO: W matrix only on training data (todo)
-%     a_mat{ii} = abs(a_mat{ii});
-    u=mean(a_mat{ii}');
-    class_means{ii} = mean(a_mat{ii},2);
-    bcs=cov(u'*u);%%between class
-    wcs=zeros(32,32);%%lets do within class now
-    for jj=1:numberOfPoses
-        wcs=wcs+cov_mat{jj};
-    end
-    wcs=wcs/(numberOfPoses-1);
-    Op=wcs'*bcs;%%optimization matrix
-    [Z,W]=eig(Op);
-    W=real(W);
-    Z=real(Z);
- 
-    Wact=diag(W);%%look at the acual values
-    [val,indexT]=sort(-1*Wact);
+withinClassMatrix = withinClassMatrix / numberOfPoses;
 
-    Windex=Wact(indexT);
-    Z=Z(:,indexT);
-    eig_vec{ii}=Z;%%eigen vector
 
-    Y{ii}=Z'*a_mat{ii};%%use this to find euclidean
-    Y_avg{ii} = mean(Y{ii},2);
+% Now that we have the prereq matrices, we can create the optimizing
+% criterion matrix, which is the crux of the LDA algorithm.
+
+optMatrix = withinClassMatrix \ betweenClassMatrix; % This is equivalent to inv(A) * b
+[W,Z]=eig(optMatrix); % W is a matrix of eigenvectors, Z is a matrix of eigenvalues.
+
+% We should now sort the eigenvalues and their associated eigenvectors.
+[z, ind] = sort(diag(Z));
+Zsorted = Z(ind, ind);
+Wsorted = W(:, ind);
+
+% Now we can remove eigenvalues and the eigenvectors that are very small
+% (<1e-6)
+%Wsorted = Wsorted(:, 1:10); % After the 10th eigenvalue, these vectors get really small.
+
+
+% Now that we have our matrix, we can go ahead and transform the validation
+% data into our newly defined space, and we also need to transform the
+% class mean vectors.
+
+transformedClassMeanMatrix = Wsorted' * classMeansMatrix;
+
+for i=1:numberOfPoses
+    a=[WL_val{i};SSC_val{i};MAV_val{i};ZC_val{i}];
+    Yval{i} = Wsorted' * a;
 end
-% TODO: swap Z & W
+
+x = 3
 %% Euclidean Distance
 for p = 1:numberOfPoses
     a=[WL_val{p};SSC_val{p};MAV_val{p};ZC_val{p}];
     for k = 1:length(a)
-        yVec(:,k) = Z' * a(:,k); % all features transformed for single bin
+        yVec(:,k) = W' * a(:,k); % all features transformed for single bin
     end
     % yVec: every transformed for pose p
     Yval{p} = yVec;
