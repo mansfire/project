@@ -1,10 +1,15 @@
-o% clc;
+clc;
 clear;
 close all;
+global TURN_ON_PLOTS;
+TURN_ON_PLOTS = true; % set this to true if you want the figures to appear.
+global REMOVE_CHANNEL_SIX;
+% Surprisingly, we get consistently worse performance when we remove channel 6. There's some good information there!
+REMOVE_CHANNEL_SIX = false; 
 
 fdsGroup4 = fileDatastore(fullfile('LDACLASSIFYG4'), 'PreviewFcn', @load, 'ReadFcn', @load, 'IncludeSubfolders', false, 'FileExtensions', '.mat');
 previewData = preview(fdsGroup4); % Peeks into the first file in the data directory
-fs=previewData.samplingRate ;%sampling rate
+fs=previewData.samplingRate; %sampling rate / frequency. (~3004 Hz)
 dt=1/fs;
 
 numberOfFiles = length(fdsGroup4.Files);
@@ -14,19 +19,29 @@ for idx = 1:numberOfFiles
     mymodel.name{idx} = name;
     emgDataStruct = read(fdsGroup4);
     mymodel.data{idx} = emgDataStruct.Data;
-    %mymodel.data{idx}{6} = zeros(length(mymodel.data{idx}{6}), 1); %channel 6 might be bad. Remove?
+    if REMOVE_CHANNEL_SIX
+        mymodel.data{idx}(6) = []; %channel 6 might be bad. Remove?
+    end
     mymodel.length{idx} = emgDataStruct.length_sec;
 end
 numberOfChans= length(mymodel.data{1});%%find how many channels we have
 
-
 %% Construct the filters, and run data through them.
+% We used a single bandpass filter with the filtfilt function, as well as
+% spectrum interpolation to remove the 60 Hz + harmonic noise. Please note
+% that it is impossible to get a traditional filter plot from the 60 Hz &
+% harmonic filtering we did! Hence why we only show the before and after
+% plots after combining both the bandpass and spectrum interpolation.
+
 lp=480; % Hz
 hp=30; % Hz
 
 bp1  = designfilt('bandpassiir','FilterOrder',20, ...
     'HalfPowerFrequency1',hp,'HalfPowerFrequency2',lp, ...
     'SampleRate',fs);
+
+fvtool(bp1);
+title("Bandpass filter, passband = 30-480 Hz");
 
 total_data = cell(1,numberOfFiles);
 for kk=1:numberOfFiles
@@ -41,16 +56,37 @@ for kk=1:numberOfFiles
     for idx = 1:w
         fulldata(:, idx) = spectrumInterpolation(fulldata(:, idx), fs, 60, 3, 2);
     end
+    
+    % plot code
+    if TURN_ON_PLOTS
+        for channels=1:width(data)
+            f = figure;
+            nexttile;
+            plot(data(:,channels));
+            title(['Raw EMG, Ch ', num2str(channels)]);
+            nexttile;
+            plot(fulldata(:,channels));
+            title(['Filtered EMG, Ch ', num2str(channels)]);
+            nexttile;
+            pwelch(data(:,channels), [], [], [], fs);
+            title(['Raw EMG PSD Ch ', num2str(channels)]);
+            nexttile;
+            pwelch(fulldata(:,channels), [], [], [], fs);
+            title(['Filtered EMG PSD Ch ', num2str(channels)]);
+            title(f.Children, convertCharsToStrings(mymodel.name{kk}));
+        end
+    end
+    
     mymodel.data{kk}=fulldata; % write back to conserve memory.
     mymodel.meanChan{kk} = mean(fulldata,2);
 end
 
-%save('filteredData.mat','mymodel','numberOfFiles','numberOfChans','fs','dt')
-
+save('filteredData.mat','mymodel','numberOfFiles','numberOfChans','fs','dt')
 
 %% This section of code removes the off data and places the "on" data into the onData member within the mymodel structure.
 % There is also a member called "overlayData" that one can use to make nice
 % plots to verify that the onData seems correct.
+
 mymodel = removeOffData(mymodel);
 % We need to make the datasets all the same length now.
 % Determine the shortest onData length, then just shorten all the other
@@ -70,15 +106,12 @@ for i=1:numberOfFiles
 end
 
 TrimmedTF = mymodel.onData;
-%save('trimmedData.mat','mymodel','TrimmedTF','numberOfFiles','numberOfChans','fs','dt')
 
-
-%% off data prep
-%clear all
-%load('trimmedData.mat')
-
-
-binsize=0.05*fs;
+%% Feature extraction
+% Here, we determine the binning and 4 features (MAV, SSC, WL, and ZC) used
+% to create our LDA classifier.
+binTime = 100; % milliseconds
+binsize=(binTime/1000)*fs;
 
 Tz = cell(numberOfFiles, 1);
 for kk=1:numberOfFiles
@@ -112,6 +145,27 @@ for jj=1:numberOfFiles
     WL{jj}=WL_TZ;%%add the current WL feature to the structure
 end
 
+% Plot the features
+if TURN_ON_PLOTS
+    for idx=1:numberOfFiles
+        for jdx=1:numberOfChans
+            f = figure;
+            nexttile;
+            plot(ZC{idx}(jdx, :));
+            title(['Zero Crossing, Ch ', num2str(jdx)]);
+            nexttile;
+            plot(MAV{idx}(jdx, :));
+            title(['Mean Absolute Value, Ch ', num2str(jdx)]);
+            nexttile;
+            plot(SSC{idx}(jdx, :));
+            title(['Slope Sign Change, Ch ', num2str(jdx)]);
+            nexttile;
+            plot(WL{idx}(jdx, :));
+            title(['Waveform-Length, Ch ', num2str(jdx)]);
+            title(f.Children, [mymodel.name{idx}, ' Features. ', num2str(nBin-1), ' bins, length = ', num2str(binTime), ' ms.']);
+        end
+    end
+end
 
 %Data separation
 trainingIndex = 1:2:24;
@@ -137,10 +191,13 @@ WL_val = WL(1, validationIndex);
 
 numberOfPoses = numberOfFiles / 2;
 
-
+%% Matrices used for LDA
 % Create the class mean matrix, and the associated between class separation
-% matrix.
-classMeansMatrix = zeros(32, numberOfPoses);
+% matrix, as well as the sorted matrix of eigenvectors (Wsroted), thresheld above
+% 1e-6. This matrix will serve as our linear transformation from the
+% original feature space to the newly defined space.
+
+classMeansMatrix = zeros(numberOfChans * 4, numberOfPoses);
 for i=1:numberOfPoses
     featureMatrix =[WL_train{i};SSC_train{i};MAV_train{i};ZC_train{i}];%create a matrix of our feature
     % For each posture set, we will determine the average value of each
@@ -154,7 +211,7 @@ allClassMeanVector = mean(classMeansMatrix); % This is just the mean of all clas
 % Create the within class scatter matrix, which is just the average of each
 % output classes' covariance matrices.
 
-withinClassMatrix = zeros(32,32);
+withinClassMatrix = zeros(numberOfChans * 4,numberOfChans * 4);
 for i=1:numberOfPoses
     featureMatrix =[WL_train{i};SSC_train{i};MAV_train{i};ZC_train{i}];%create a matrix of our feature
     featureMatrix = featureMatrix'; % Transpose it to properly compute the covariance matrix for this class.
@@ -171,21 +228,24 @@ optMatrix = withinClassMatrix \ betweenClassMatrix; % This is equivalent to inv(
 [W,Z]=eig(optMatrix); % W is a matrix of eigenvectors, Z is a matrix of eigenvalues.
 
 % We should now sort the eigenvalues and their associated eigenvectors.
-[z, ind] = sort(diag(Z));
+[z, ind] = sort(diag(Z), 'descend');
 Zsorted = Z(ind, ind);
 Wsorted = W(:, ind);
 
 % Now we can remove eigenvalues and the eigenvectors that are very small
 % (<1e-6)
-%Wsorted = Wsorted(:, 1:10); % After the 10th eigenvalue, these vectors get really small.
+Wsorted = Wsorted(:, 1:11); % After the 10th eigenvalue, these vectors get really small.
 
+
+%% Euclidean Distance
+% This calculation determines each data points' distance from the mean
+% vectors in our newly defined space. The mean vector that the point is
+% closest to is the output of the LDA classifier.
 
 % Now that we have our matrix, we can go ahead and transform the validation
 % data into our newly defined space, and we also need to transform the
 % class mean vectors.
-%% Euclidean Distance
 transformedClassMeanMatrix = real(Wsorted)' * classMeansMatrix;
-
 
 for i=1:numberOfPoses
     a=[WL_val{i};SSC_val{i};MAV_val{i};ZC_val{i}];
@@ -204,26 +264,21 @@ for m = 1:numberOfPoses         % val poses
         clear dist sqTerms
         
         for i = 1:numBins
-            
-            for j = 1:32
+            for j = 1:width(Wsorted)
                 yVal_i = Yval{1,m}(j,i);
                 yTrain_i = Y_avg{1,n}(j);
-%                 yTrainCapture{n}(
-%                 sqTerms(j) = (Yval{m}(j,i) - Y_avg{n}(j,i))^2;
                 sqTerms(j) = (yVal_i - yTrain_i)^2;
-            end
-            
+            end            
             dist(i) = sqrt(sum(sqTerms));
         end
-        
         distByTrainPose(n,:) = dist;
-
     end
     distStruct{m} = distByTrainPose; 
 end
 
 %% Classification
-
+% This is where the confusion matrix is created and we can view the results
+% of our classification.
 classNames = ['Grasping' 'Hand Close' 'Hand Open' 'Off' 'Thumb Abduction'...
     'Thumb Adduction' 'Wrist Extension' 'Wrist Flexion' 'Wrist Pronation'...
     'Wrist Rad Dev' 'Wrist Supination' 'Wrist Ulnar Dev'];
@@ -233,29 +288,21 @@ for i = 1:numberOfPoses
     min_d=10^6;%%we need to set a treshold
     for j=1:numBins
        valBin=valPose(:,j);
-
        [minDist,index] = min(valBin);
-   
-
-%        classes.minDist{i} = minDist;
-%        classes.index{i} = index;
-% 
-%        [gc,grps] = groupcounts(index);
-% 
-%        classes.gc{i} = gc;
-%        classes.grps{i} = grps;
-% 
-%        topClass = classes.grps{1};
-
        outputClass(j) = index;
-       
     end
     outPutFull=[outPutFull outputClass];
 end
 outPutFull = categorical(outPutFull);
 trueCats=[];
 for ii=1:numberOfPoses
-    trueCats=[trueCats ones(1,716)*ii];
+    trueCats=[trueCats ones(1,nBin-1)*ii];
 end
 trueCats=categorical(trueCats);
 plotconfusion(trueCats,outPutFull)
+if REMOVE_CHANNEL_SIX
+    % We actually get worse performance with channel 6 removed.
+    title(['Confusion Matrix with Channel 6 removed, binsize = ', num2str(binTime), ' milliseconds']); 
+else
+    title(['Confusion Matrix with Channel 6 intact, binsize = ', num2str(binTime), ' milliseconds']);
+end
